@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ledger
 
-## Getting Started
+A multi-tenant accounting platform starter: sign up, get a business
+("tenant") with a default chart of accounts, and record double-entry
+journal transactions. This is **Phase 1** of a larger plan — payroll and
+point-of-sale are not built yet (see Roadmap below).
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind
+- Prisma ORM, SQLite for local dev (swap to PostgreSQL for production —
+  see below)
+- Custom auth: email/password, JWT session cookie (`lib/auth.ts`)
+- Multi-tenant: every table that holds business data has a `tenantId`
+  column; a user's session carries which tenant they're acting as
+
+## Running locally
 
 ```bash
+npm install
+npx prisma generate
+npx prisma migrate dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Sign up to create a
+business — it comes with a default chart of accounts (`lib/default-accounts.ts`)
+already loaded.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Needs a `.env` (used by the Prisma CLI) and `.env.local` (used by the Next.js
+app) — see `.env.local.example`. `.env` needs `DATABASE_URL`; `.env.local`
+needs `AUTH_SECRET` (a long random string — generate one with
+`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What's built (Phase 1)
 
-## Learn More
+- **Auth & multi-tenancy**: signup creates a `Tenant` + owner `User` +
+  `Membership`; all data is scoped by `tenantId`. Routes under
+  `/dashboard`, `/accounts`, `/journal`, `/reports` require a session
+  (enforced in `proxy.ts`, Next's middleware/proxy convention).
+- **Chart of Accounts** (`/accounts`): standard account types (asset,
+  liability, equity, revenue, expense), seeded with a starter set including
+  Lebanon-relevant accounts (VAT Payable, NSSF Payable).
+- **General ledger** (`/journal`): double-entry journal entries — every
+  entry must have debits equal credits, validated server-side before it's
+  saved (`lib/actions/journal.ts`).
+- **Trial Balance report** (`/reports/trial-balance`): sums every account's
+  activity and confirms the books balance.
 
-To learn more about Next.js, take a look at the following resources:
+## Roadmap (not built yet)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Point of Sale**: ring up sales, which should post journal entries
+  automatically (debit Cash/AR, credit Sales Revenue and VAT Payable) —
+  the `JournalEntry.source` field already has a `"pos"` value reserved for
+  this.
+- **Payroll**: Lebanese income tax withholding and NSSF contributions.
+  **Important**: exact current rates/brackets need to come from an
+  accountant or Lebanon's Ministry of Finance/NSSF directly before this is
+  built — tax rules there have changed frequently and getting this wrong
+  has real consequences for your clients. The engine should be built so
+  rates are editable config, not hardcoded.
+- Multi-currency (Lebanon commonly operates in both LBP and USD).
+- Multi-user per tenant (inviting staff — the `Membership`/`Role` model
+  already supports OWNER/ADMIN/STAFF roles, but there's no invite flow yet).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploying
 
-## Deploy on Vercel
+For production you'll want real PostgreSQL rather than SQLite (better
+concurrent-write support for a multi-tenant app):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. In `prisma/schema.prisma`, change `provider = "sqlite"` to
+   `provider = "postgresql"`.
+2. Point `DATABASE_URL` at your Postgres instance (e.g. a managed database
+   from Railway, Supabase, or Vercel Postgres).
+3. Run `npx prisma migrate deploy`.
+4. Deploy the Next.js app (e.g. to Vercel), with `DATABASE_URL` and
+   `AUTH_SECRET` set as environment variables there.

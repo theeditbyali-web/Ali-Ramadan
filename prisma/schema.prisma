@@ -1,0 +1,93 @@
+// Local dev uses SQLite (see datasource below). Switch "provider" to
+// "postgresql" and DATABASE_URL to a real Postgres connection string when
+// you deploy to production — the schema itself is Postgres-compatible.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Tenant {
+  id             String         @id @default(cuid())
+  name           String
+  country        String         @default("LB")
+  currency       String         @default("USD")
+  createdAt      DateTime       @default(now())
+  memberships    Membership[]
+  accounts       Account[]
+  journalEntries JournalEntry[]
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+}
+
+model Membership {
+  id       String @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role   @default(OWNER)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+}
+
+model Account {
+  id        String        @id @default(cuid())
+  tenantId  String
+  code      String
+  name      String
+  type      AccountType
+  parentId  String?
+  createdAt DateTime      @default(now())
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent    Account?      @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children  Account[]     @relation("AccountHierarchy")
+  lines     JournalLine[]
+
+  @@unique([tenantId, code])
+}
+
+model JournalEntry {
+  id        String        @id @default(cuid())
+  tenantId  String
+  date      DateTime
+  memo      String?
+  source    String        @default("manual") // "manual" | "pos" | "payroll"
+  createdAt DateTime      @default(now())
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines     JournalLine[]
+}
+
+model JournalLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debitCents     Int          @default(0)
+  creditCents    Int          @default(0)
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        Account      @relation(fields: [accountId], references: [id])
+}
