@@ -9,7 +9,11 @@ const initialState: ActionState = {};
 const inputClass =
   "rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft";
 
-export default function ItemForm() {
+export default function ItemForm({
+  categoryNames = [],
+}: {
+  categoryNames?: string[];
+}) {
   const [state, formAction, pending] = useActionState(createItem, initialState);
 
   return (
@@ -23,9 +27,15 @@ export default function ItemForm() {
           Category
           <input
             name="category"
+            list="category-names"
             placeholder="e.g. Beverages"
             className={`w-40 ${inputClass}`}
           />
+          <datalist id="category-names">
+            {categoryNames.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Unit

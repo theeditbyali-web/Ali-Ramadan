@@ -11,10 +11,18 @@ function formatCents(cents: number, currency: string): string {
 
 export default async function ItemsPage() {
   const { tenant } = await requireTenant();
-  const items = await db.item.findMany({
-    where: { tenantId: tenant.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const [items, categories] = await Promise.all([
+    db.item.findMany({
+      where: { tenantId: tenant.id },
+      orderBy: { createdAt: "asc" },
+      include: { category: true },
+    }),
+    db.category.findMany({
+      where: { tenantId: tenant.id },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const rows = await Promise.all(
     items.map(async (item) => {
@@ -33,7 +41,7 @@ export default async function ItemsPage() {
         </p>
       </div>
 
-      <ItemForm />
+      <ItemForm categoryNames={categories.map((c) => c.name)} />
 
       <Card className="overflow-hidden">
         <table className="w-full text-sm">
@@ -59,7 +67,7 @@ export default async function ItemsPage() {
                     {item.name}
                   </Link>
                 </td>
-                <td className="px-5 py-3 text-muted">{item.category || "—"}</td>
+                <td className="px-5 py-3 text-muted">{item.category?.name || "—"}</td>
                 <td className="px-5 py-3 text-muted">{item.unit}</td>
                 <td className="px-5 py-3 text-right tabular-nums">
                   {formatCents(item.priceCents, tenant.currency)}

@@ -18,6 +18,7 @@ export const DEFAULT_ACCOUNTS: {
   { code: "3000", name: "Owner's Equity", type: "EQUITY" },
   { code: "3900", name: "Retained Earnings", type: "EQUITY" },
   { code: "4000", name: "Sales Revenue", type: "REVENUE" },
+  { code: "701", name: "Sales by Category", type: "REVENUE" },
   { code: "5000", name: "Cost of Goods Sold", type: "EXPENSE" },
   { code: "6000", name: "Payroll Expense", type: "EXPENSE" },
   { code: "6100", name: "Rent Expense", type: "EXPENSE" },

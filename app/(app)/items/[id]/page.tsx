@@ -28,10 +28,11 @@ export default async function ItemCardPage({
 
   const item = await db.item.findFirst({
     where: { id, tenantId: tenant.id },
+    include: { category: { include: { account: true } } },
   });
   if (!item) notFound();
 
-  const [components, usedIn, movements, otherItems] = await Promise.all([
+  const [components, usedIn, movements, otherItems, categories] = await Promise.all([
     db.itemComponent.findMany({
       where: { parentItemId: item.id },
       include: { componentItem: true },
@@ -49,6 +50,11 @@ export default async function ItemCardPage({
       where: { tenantId: tenant.id, id: { not: item.id } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, unit: true },
+    }),
+    db.category.findMany({
+      where: { tenantId: tenant.id },
+      select: { name: true },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -71,9 +77,9 @@ export default async function ItemCardPage({
         <h1 className="mt-1 text-2xl font-semibold">{item.name}</h1>
       </div>
 
-      <ItemEditForm item={item} />
+      <ItemEditForm item={item} categoryNames={categories.map((c) => c.name)} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <Card className="p-5">
           <p className="text-sm text-muted">Cost</p>
           <p className="text-xl font-semibold">
@@ -107,6 +113,19 @@ export default async function ItemCardPage({
             {stockOnHand} {item.unit}
           </p>
           <p className="text-xs text-muted">From purchases and sales</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-sm text-muted">Revenue account</p>
+          <p className="font-mono text-xl font-semibold">
+            {item.category?.account?.code ?? "—"}
+          </p>
+          <p className="text-xs text-muted">
+            {item.category?.account
+              ? `Category: ${item.category.name}`
+              : item.sellable
+              ? "Set a category to get one"
+              : "Not sold at POS"}
+          </p>
         </Card>
       </div>
 

@@ -12,13 +12,19 @@ const inputClass =
 type Item = {
   id: string;
   name: string;
-  category: string | null;
+  category: { name: string } | null;
   unit: string;
   priceCents: number;
   sellable: boolean;
 };
 
-export default function ItemEditForm({ item }: { item: Item }) {
+export default function ItemEditForm({
+  item,
+  categoryNames = [],
+}: {
+  item: Item;
+  categoryNames?: string[];
+}) {
   const [state, formAction, pending] = useActionState(
     updateItem,
     initialState
@@ -42,10 +48,16 @@ export default function ItemEditForm({ item }: { item: Item }) {
           Category
           <input
             name="category"
-            defaultValue={item.category ?? ""}
+            list="category-names"
+            defaultValue={item.category?.name ?? ""}
             placeholder="e.g. Beverages"
             className={`w-40 ${inputClass}`}
           />
+          <datalist id="category-names">
+            {categoryNames.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Unit

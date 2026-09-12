@@ -46,6 +46,7 @@ export async function createOrder(
       tenantId: tenant.id,
       id: { in: lineInputs.map((l) => l.itemId) },
     },
+    include: { category: true },
   });
   const itemMap = new Map(catalogItems.map((p) => [p.id, p]));
 
@@ -59,6 +60,7 @@ export async function createOrder(
       itemId: item.id,
       quantity: l.quantity,
       priceCents: item.priceCents,
+      revenueAccountId: item.category?.accountId ?? null,
     };
   });
 
@@ -69,7 +71,7 @@ export async function createOrder(
   const taxCents = calculateTax(subtotalCents);
   const totalCents = subtotalCents + taxCents;
 
-  const [salesRevenue, vatPayable] = await Promise.all([
+  const [fallbackSalesRevenue, vatPayable] = await Promise.all([
     db.account.findUnique({
       where: { tenantId_code: { tenantId: tenant.id, code: "4000" } },
     }),
@@ -77,8 +79,21 @@ export async function createOrder(
       where: { tenantId_code: { tenantId: tenant.id, code: "2100" } },
     }),
   ]);
-  if (!salesRevenue || !vatPayable) {
+  if (!fallbackSalesRevenue || !vatPayable) {
     return { error: "Required accounts (Sales Revenue / VAT Payable) are missing." };
+  }
+
+  // Split the sale across each item's category revenue account (701-series);
+  // items with no category, or whose category has no linked account yet,
+  // fall back to the generic Sales Revenue (4000) account.
+  const revenueByAccount = new Map<string, number>();
+  for (const line of orderLines) {
+    const accountId = line.revenueAccountId ?? fallbackSalesRevenue.id;
+    const lineTotal = line.priceCents * line.quantity;
+    revenueByAccount.set(
+      accountId,
+      (revenueByAccount.get(accountId) ?? 0) + lineTotal
+    );
   }
 
   try {
@@ -98,7 +113,13 @@ export async function createOrder(
           lines: {
             create: [
               { accountId: customer.accountId, debitCents: totalCents, creditCents: 0 },
-              { accountId: salesRevenue.id, debitCents: 0, creditCents: subtotalCents },
+              ...Array.from(revenueByAccount.entries()).map(
+                ([accountId, cents]) => ({
+                  accountId,
+                  debitCents: 0,
+                  creditCents: cents,
+                })
+              ),
               ...(taxCents > 0
                 ? [{ accountId: vatPayable.id, debitCents: 0, creditCents: taxCents }]
                 : []),
@@ -117,7 +138,13 @@ export async function createOrder(
           taxCents,
           totalCents,
           journalEntryId: journalEntry.id,
-          items: { create: orderLines },
+          items: {
+            create: orderLines.map((l) => ({
+              itemId: l.itemId,
+              quantity: l.quantity,
+              priceCents: l.priceCents,
+            })),
+          },
         },
       });
 

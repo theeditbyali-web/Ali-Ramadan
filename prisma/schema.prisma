@@ -47,6 +47,7 @@ model Tenant {
   journalEntries JournalEntry[]
   customers      Customer[]
   suppliers      Supplier[]
+  categories     Category[]
   items          Item[]
   orders         Order[]
   purchaseOrders PurchaseOrder[]
@@ -87,6 +88,7 @@ model Account {
   lines     JournalLine[]
   customer  Customer?
   supplier  Supplier?
+  category  Category?
 
   @@unique([tenantId, code])
 }
@@ -159,12 +161,13 @@ model Item {
   id         String      @id @default(cuid())
   tenantId   String
   name       String
-  category   String?
+  categoryId String?
   unit       String      @default("unit")
   sellable   Boolean     @default(true) // shown at the POS register when true
   priceCents Int
   createdAt  DateTime    @default(now())
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category   Category?   @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
   purchaseLines PurchaseOrderLine[]
   movements  ItemMovement[]
@@ -173,6 +176,22 @@ model Item {
   // other items use this one as a sub-item.
   components ItemComponent[] @relation("ParentItem")
   usedIn     ItemComponent[] @relation("ComponentItem")
+}
+
+// An item category (e.g. "Pure Coffee", "Bakery"). When a category has
+// sellable items, it gets a dedicated revenue account under 701 in the
+// chart of accounts, so POS sales post to the right category's account.
+model Category {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  accountId String?  @unique
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account   Account? @relation(fields: [accountId], references: [id])
+  items     Item[]
+
+  @@unique([tenantId, name])
 }
 
 // A sub-item / ingredient relationship: `quantity` units of componentItem

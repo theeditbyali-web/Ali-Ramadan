@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { resolveCategory } from "@/lib/categories";
 
 export type ActionState = { error?: string };
 
@@ -13,7 +14,7 @@ export async function createItem(
   const { tenant } = await requireTenant();
 
   const name = String(formData.get("name") || "").trim();
-  const category = String(formData.get("category") || "").trim();
+  const categoryName = String(formData.get("category") || "").trim();
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
   const sellable = formData.get("sellable") === "on";
@@ -21,19 +22,32 @@ export async function createItem(
   if (!name) return { error: "Name is required." };
   if (!(price > 0)) return { error: "Price must be greater than 0." };
 
-  await db.item.create({
-    data: {
-      tenantId: tenant.id,
-      name,
-      category: category || null,
-      unit,
-      priceCents: Math.round(price * 100),
-      sellable,
-    },
-  });
+  try {
+    await db.$transaction(async (tx) => {
+      const category = categoryName
+        ? await resolveCategory(tx, tenant.id, categoryName, sellable)
+        : null;
+
+      await tx.item.create({
+        data: {
+          tenantId: tenant.id,
+          name,
+          categoryId: category?.id ?? null,
+          unit,
+          priceCents: Math.round(price * 100),
+          sellable,
+        },
+      });
+    });
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not save the item.",
+    };
+  }
 
   revalidatePath("/items");
   revalidatePath("/pos");
+  revalidatePath("/accounts");
   return {};
 }
 
@@ -45,7 +59,7 @@ export async function updateItem(
 
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
-  const category = String(formData.get("category") || "").trim();
+  const categoryName = String(formData.get("category") || "").trim();
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
   const sellable = formData.get("sellable") === "on";
@@ -59,20 +73,33 @@ export async function updateItem(
   });
   if (!existing) return { error: "Item not found." };
 
-  await db.item.update({
-    where: { id },
-    data: {
-      name,
-      category: category || null,
-      unit,
-      priceCents: Math.round(price * 100),
-      sellable,
-    },
-  });
+  try {
+    await db.$transaction(async (tx) => {
+      const category = categoryName
+        ? await resolveCategory(tx, tenant.id, categoryName, sellable)
+        : null;
+
+      await tx.item.update({
+        where: { id },
+        data: {
+          name,
+          categoryId: category?.id ?? null,
+          unit,
+          priceCents: Math.round(price * 100),
+          sellable,
+        },
+      });
+    });
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Could not save the item.",
+    };
+  }
 
   revalidatePath("/items");
   revalidatePath(`/items/${id}`);
   revalidatePath("/pos");
+  revalidatePath("/accounts");
   return {};
 }
 
