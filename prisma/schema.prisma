@@ -24,6 +24,12 @@ enum AccountType {
   EXPENSE
 }
 
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
 model Tenant {
   id             String         @id @default(cuid())
   name           String
@@ -33,6 +39,9 @@ model Tenant {
   memberships    Membership[]
   accounts       Account[]
   journalEntries JournalEntry[]
+  customers      Customer[]
+  products       Product[]
+  orders         Order[]
 }
 
 model User {
@@ -67,6 +76,7 @@ model Account {
   parent    Account?      @relation("AccountHierarchy", fields: [parentId], references: [id])
   children  Account[]     @relation("AccountHierarchy")
   lines     JournalLine[]
+  customer  Customer?
 
   @@unique([tenantId, code])
 }
@@ -80,6 +90,7 @@ model JournalEntry {
   createdAt DateTime      @default(now())
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lines     JournalLine[]
+  order     Order?
 }
 
 model JournalLine {
@@ -90,4 +101,57 @@ model JournalLine {
   creditCents    Int          @default(0)
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   account        Account      @relation(fields: [accountId], references: [id])
+}
+
+// A customer known to this business. Each customer gets a dedicated
+// sub-account under Accounts Receivable in the chart of accounts, so every
+// POS order posts against that specific customer's ledger balance.
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  accountId String   @unique
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account   Account  @relation(fields: [accountId], references: [id])
+  orders    Order[]
+
+  @@unique([tenantId, name])
+}
+
+model Product {
+  id         String      @id @default(cuid())
+  tenantId   String
+  name       String
+  priceCents Int
+  createdAt  DateTime    @default(now())
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  tenantId       String
+  customerId     String
+  type           OrderType
+  cutlery        String?       // comma-separated selections; only set for TAKEAWAY/DELIVERY
+  subtotalCents  Int
+  taxCents       Int
+  totalCents     Int
+  createdAt      DateTime      @default(now())
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
+  journalEntryId String        @unique
+  journalEntry   JournalEntry  @relation(fields: [journalEntryId], references: [id])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  priceCents Int
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
 }

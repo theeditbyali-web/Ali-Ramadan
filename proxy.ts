@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/accounts", "/journal", "/reports"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/accounts",
+  "/journal",
+  "/reports",
+  "/pos",
+  "/products",
+  "/customers",
+];
 
 async function hasValidSession(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get("session")?.value;
@@ -29,5 +37,13 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/accounts/:path*", "/journal/:path*", "/reports/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/accounts/:path*",
+    "/journal/:path*",
+    "/reports/:path*",
+    "/pos/:path*",
+    "/products/:path*",
+    "/customers/:path*",
+  ],
 };
