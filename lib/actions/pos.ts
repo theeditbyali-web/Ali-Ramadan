@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { calculateTax } from "@/lib/tax";
-import type { OrderType } from "@prisma/client";
+import type { OrderType, PaymentMethod } from "@prisma/client";
 
 export type ActionState = { error?: string };
 
 const ORDER_TYPES: OrderType[] = ["DINE_IN", "TAKEAWAY", "DELIVERY"];
+const PAYMENT_METHODS: PaymentMethod[] = ["ON_ACCOUNT", "WHISH"];
 
 export async function createOrder(
   _prevState: ActionState,
@@ -18,6 +19,8 @@ export async function createOrder(
 
   const customerName = String(formData.get("customerName") || "").trim();
   const orderType = String(formData.get("orderType") || "") as OrderType;
+  const paymentMethod = (String(formData.get("paymentMethod") || "") ||
+    "ON_ACCOUNT") as PaymentMethod;
   const cutleryItems = formData.getAll("cutlery").map(String);
   const cutlery =
     orderType !== "DINE_IN" && cutleryItems.length > 0
@@ -31,6 +34,9 @@ export async function createOrder(
   if (!customerName) return { error: "Customer name is required." };
   if (!ORDER_TYPES.includes(orderType)) {
     return { error: "Select an order type." };
+  }
+  if (!PAYMENT_METHODS.includes(paymentMethod)) {
+    return { error: "Select a payment method." };
   }
 
   const lineInputs = itemIds
@@ -71,16 +77,22 @@ export async function createOrder(
   const taxCents = calculateTax(subtotalCents);
   const totalCents = subtotalCents + taxCents;
 
-  const [fallbackSalesRevenue, vatPayable] = await Promise.all([
+  const [fallbackSalesRevenue, vatPayable, whishAccount] = await Promise.all([
     db.account.findUnique({
       where: { tenantId_code: { tenantId: tenant.id, code: "4000" } },
     }),
     db.account.findUnique({
       where: { tenantId_code: { tenantId: tenant.id, code: "2100" } },
     }),
+    db.account.findUnique({
+      where: { tenantId_code: { tenantId: tenant.id, code: "531" } },
+    }),
   ]);
   if (!fallbackSalesRevenue || !vatPayable) {
     return { error: "Required accounts (Sales Revenue / VAT Payable) are missing." };
+  }
+  if (paymentMethod === "WHISH" && !whishAccount) {
+    return { error: 'No "Whish" (531) account found.' };
   }
 
   // Split the sale across each item's category revenue account (701-series);
@@ -104,15 +116,20 @@ export async function createOrder(
         customerName
       );
 
+      const settlementAccountId =
+        paymentMethod === "WHISH" ? whishAccount!.id : customer.accountId;
+
       const journalEntry = await tx.journalEntry.create({
         data: {
           tenantId: tenant.id,
           date: new Date(),
-          memo: `${orderTypeLabel(orderType)} order — ${customerName}`,
+          memo: `${orderTypeLabel(orderType)} order — ${customerName}${
+            paymentMethod === "WHISH" ? " (paid via Whish)" : ""
+          }`,
           source: "pos",
           lines: {
             create: [
-              { accountId: customer.accountId, debitCents: totalCents, creditCents: 0 },
+              { accountId: settlementAccountId, debitCents: totalCents, creditCents: 0 },
               ...Array.from(revenueByAccount.entries()).map(
                 ([accountId, cents]) => ({
                   accountId,
@@ -133,6 +150,7 @@ export async function createOrder(
           tenantId: tenant.id,
           customerId: customer.id,
           type: orderType,
+          paymentMethod,
           cutlery,
           subtotalCents,
           taxCents,

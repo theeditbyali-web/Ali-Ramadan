@@ -20,6 +20,11 @@ const ORDER_TYPES: { value: string; label: string }[] = [
 
 const CUTLERY_OPTIONS = ["Fork", "Knife", "Spoon", "Napkins"];
 
+const PAYMENT_METHODS: { value: string; label: string }[] = [
+  { value: "ON_ACCOUNT", label: "On account" },
+  { value: "WHISH", label: "Whish" },
+];
+
 function formatCents(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency });
 }
@@ -39,6 +44,7 @@ export default function POSForm({
   );
   const [cart, setCart] = useState<Record<string, number>>({});
   const [orderType, setOrderType] = useState("DINE_IN");
+  const [paymentMethod, setPaymentMethod] = useState("ON_ACCOUNT");
   const [cutlery, setCutlery] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const isFirstRender = useRef(true);
@@ -51,6 +57,7 @@ export default function POSForm({
     if (!state?.error) {
       setCart({});
       setOrderType("DINE_IN");
+      setPaymentMethod("ON_ACCOUNT");
       setCutlery([]);
       formRef.current?.reset();
     }
@@ -96,7 +103,7 @@ export default function POSForm({
     <form ref={formRef} action={formAction} className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-4">
         <Card className="p-5">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="flex flex-col gap-1.5 text-sm font-medium">
               Customer name
               <input
@@ -133,6 +140,31 @@ export default function POSForm({
                       className="sr-only"
                     />
                     {t.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 text-sm font-medium">
+              Payment method
+              <div className="flex gap-2">
+                {PAYMENT_METHODS.map((m) => (
+                  <label
+                    key={m.value}
+                    className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                      paymentMethod === m.value
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-border text-muted hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={m.value}
+                      checked={paymentMethod === m.value}
+                      onChange={() => setPaymentMethod(m.value)}
+                      className="sr-only"
+                    />
+                    {m.label}
                   </label>
                 ))}
               </div>

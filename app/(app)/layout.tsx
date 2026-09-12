@@ -22,7 +22,7 @@ const NAV = [
   { href: "/suppliers", label: "Suppliers", icon: UsersIcon },
   { href: "/accounts", label: "Chart of Accounts", icon: BookIcon },
   { href: "/journal", label: "Journal", icon: LedgerIcon },
-  { href: "/reports/trial-balance", label: "Trial Balance", icon: ChartIcon },
+  { href: "/reports", label: "Reports", icon: ChartIcon },
 ];
 
 export default async function AppLayout({

@@ -36,6 +36,11 @@ enum MovementType {
   ADJUSTMENT
 }
 
+enum PaymentMethod {
+  ON_ACCOUNT
+  WHISH
+}
+
 model Tenant {
   id             String          @id @default(cuid())
   name           String
@@ -250,6 +255,7 @@ model Order {
   tenantId       String
   customerId     String
   type           OrderType
+  paymentMethod  PaymentMethod @default(ON_ACCOUNT)
   cutlery        String?       // comma-separated selections; only set for TAKEAWAY/DELIVERY
   subtotalCents  Int
   taxCents       Int

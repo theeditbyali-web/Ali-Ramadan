@@ -9,6 +9,11 @@ const TYPE_LABEL: Record<string, string> = {
   DELIVERY: "Delivery",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  ON_ACCOUNT: "On account",
+  WHISH: "Whish",
+};
+
 function formatCents(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency });
 }
@@ -63,7 +68,7 @@ export default async function POSPage() {
             <div>
               <p className="font-medium">{order.customer.name}</p>
               <p className="text-muted">
-                {TYPE_LABEL[order.type]} ·{" "}
+                {TYPE_LABEL[order.type]} · {PAYMENT_LABEL[order.paymentMethod]} ·{" "}
                 {order.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                 {order.cutlery ? ` · Cutlery: ${order.cutlery.split(",").join(", ")}` : ""}
               </p>
