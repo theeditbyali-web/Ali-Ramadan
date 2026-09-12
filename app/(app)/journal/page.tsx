@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import JournalEntryForm from "@/components/JournalEntryForm";
+import Card from "@/components/ui/Card";
 
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("en-US", {
@@ -28,40 +29,48 @@ export default async function JournalPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-semibold">Journal</h1>
+      <div>
+        <h1 className="text-2xl font-semibold">Journal</h1>
+        <p className="text-muted">
+          Every transaction, recorded as balanced debits and credits.
+        </p>
+      </div>
+
       <JournalEntryForm accounts={accounts} />
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+          Recent entries
+        </h2>
         {entries.length === 0 && (
-          <p className="text-sm text-zinc-500">No entries yet.</p>
+          <p className="text-sm text-muted">No entries yet.</p>
         )}
         {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800"
-          >
-            <div className="mb-2 flex items-center justify-between text-zinc-500">
-              <span>{entry.date.toISOString().slice(0, 10)}</span>
-              <span>{entry.memo}</span>
+          <Card key={entry.id} className="p-5 text-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-medium">
+                {entry.date.toISOString().slice(0, 10)}
+              </span>
+              <span className="text-muted">{entry.memo}</span>
             </div>
             <table className="w-full">
               <tbody>
                 {entry.lines.map((line) => (
-                  <tr key={line.id}>
-                    <td className="py-0.5 pr-4">
+                  <tr key={line.id} className="border-t border-border first:border-0">
+                    <td className="py-1.5 pr-4 text-muted">
                       {line.account.code} · {line.account.name}
                     </td>
-                    <td className="py-0.5 pr-4 text-right tabular-nums">
+                    <td className="py-1.5 pr-4 text-right tabular-nums">
                       {line.debitCents ? formatCents(line.debitCents) : ""}
                     </td>
-                    <td className="py-0.5 text-right tabular-nums">
+                    <td className="py-1.5 text-right tabular-nums">
                       {line.creditCents ? formatCents(line.creditCents) : ""}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

@@ -2,9 +2,13 @@
 
 import { useActionState } from "react";
 import { createAccount, type ActionState } from "@/lib/actions/accounts";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
 const initialState: ActionState = {};
 const TYPES = ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"] as const;
+const inputClass =
+  "rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft";
 
 export default function AccountForm() {
   const [state, formAction, pending] = useActionState(
@@ -13,48 +17,36 @@ export default function AccountForm() {
   );
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-    >
-      <label className="flex flex-col gap-1 text-sm">
-        Code
-        <input
-          name="code"
-          required
-          className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        Name
-        <input
-          name="name"
-          required
-          className="w-56 rounded-md border border-zinc-300 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        Type
-        <select
-          name="type"
-          required
-          className="rounded-md border border-zinc-300 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
-        >
-          {TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
+    <Card className="p-5">
+      <form action={formAction} className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Code
+          <input name="code" required className={`w-24 ${inputClass}`} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Name
+          <input name="name" required className={`w-56 ${inputClass}`} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Type
+          <select name="type" required className={inputClass} defaultValue="">
+            <option value="" disabled>
+              Select…
             </option>
-          ))}
-        </select>
-      </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-full bg-foreground px-5 py-1.5 text-sm font-medium text-background disabled:opacity-50"
-      >
-        {pending ? "Adding…" : "Add account"}
-      </button>
-      {state?.error && <p className="w-full text-sm text-red-600">{state.error}</p>}
-    </form>
+            {TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Adding…" : "Add account"}
+        </Button>
+        {state?.error && (
+          <p className="w-full text-sm text-danger">{state.error}</p>
+        )}
+      </form>
+    </Card>
   );
 }

@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 
 function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("en-US", {
@@ -33,49 +35,66 @@ export default async function TrialBalancePage() {
   const balanced = totalDebits === totalCredits;
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Trial Balance</h1>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-zinc-200 text-left text-zinc-500 dark:border-zinc-800">
-            <th className="py-2 pr-4">Account</th>
-            <th className="py-2 pr-4 text-right">Debit</th>
-            <th className="py-2 text-right">Credit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ account, debit, credit }) => (
-            <tr key={account.id} className="border-b border-zinc-100 dark:border-zinc-900">
-              <td className="py-2 pr-4">
-                {account.code} · {account.name}
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Trial Balance</h1>
+          <p className="text-muted">A snapshot of every account's balance.</p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${
+            balanced
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
+              : "bg-rose-50 text-rose-700 ring-rose-600/20"
+          }`}
+        >
+          {balanced ? "Balanced" : "Out of balance"}
+        </span>
+      </div>
+
+      <Card className="overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-muted">
+              <th className="px-5 py-3">Account</th>
+              <th className="px-5 py-3">Type</th>
+              <th className="px-5 py-3 text-right">Debit</th>
+              <th className="px-5 py-3 text-right">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ account, debit, credit }) => (
+              <tr key={account.id} className="border-b border-border last:border-0 hover:bg-slate-50">
+                <td className="px-5 py-3 font-medium">
+                  {account.code} · {account.name}
+                </td>
+                <td className="px-5 py-3">
+                  <Badge type={account.type} />
+                </td>
+                <td className="px-5 py-3 text-right tabular-nums">
+                  {debit ? formatCents(debit) : ""}
+                </td>
+                <td className="px-5 py-3 text-right tabular-nums">
+                  {credit ? formatCents(credit) : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-foreground/10 bg-slate-50 font-semibold">
+              <td className="px-5 py-3" colSpan={2}>
+                Total
               </td>
-              <td className="py-2 pr-4 text-right tabular-nums">
-                {debit ? formatCents(debit) : ""}
+              <td className="px-5 py-3 text-right tabular-nums">
+                {formatCents(totalDebits)}
               </td>
-              <td className="py-2 text-right tabular-nums">
-                {credit ? formatCents(credit) : ""}
+              <td className="px-5 py-3 text-right tabular-nums">
+                {formatCents(totalCredits)}
               </td>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="border-t border-zinc-300 font-medium dark:border-zinc-700">
-            <td className="py-2 pr-4">Total</td>
-            <td className="py-2 pr-4 text-right tabular-nums">
-              {formatCents(totalDebits)}
-            </td>
-            <td className="py-2 text-right tabular-nums">
-              {formatCents(totalCredits)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-      {!balanced && (
-        <p className="text-sm text-red-600">
-          Warning: debits and credits don&apos;t match — this shouldn&apos;t
-          happen and indicates a data issue.
-        </p>
-      )}
+          </tfoot>
+        </table>
+      </Card>
     </div>
   );
 }
