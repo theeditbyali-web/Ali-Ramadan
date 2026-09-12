@@ -7,6 +7,8 @@ export const DEFAULT_ACCOUNTS: {
 }[] = [
   { code: "1000", name: "Cash", type: "ASSET" },
   { code: "1010", name: "Bank Account", type: "ASSET" },
+  { code: "401", name: "Customers", type: "ASSET" },
+  { code: "411", name: "Suppliers", type: "LIABILITY" },
   { code: "1200", name: "Accounts Receivable", type: "ASSET" },
   { code: "1400", name: "Inventory", type: "ASSET" },
   { code: "2000", name: "Accounts Payable", type: "LIABILITY" },

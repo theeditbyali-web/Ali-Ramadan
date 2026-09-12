@@ -86,6 +86,7 @@ model Account {
   children  Account[]     @relation("AccountHierarchy")
   lines     JournalLine[]
   customer  Customer?
+  supplier  Supplier?
 
   @@unique([tenantId, code])
 }
@@ -144,8 +145,10 @@ model Supplier {
   phone          String?
   email          String?
   address        String?
+  accountId      String          @unique
   createdAt      DateTime        @default(now())
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account        Account         @relation(fields: [accountId], references: [id])
   purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, name])

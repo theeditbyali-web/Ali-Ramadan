@@ -19,6 +19,7 @@ export default async function SupplierCardPage({
 
   const supplier = await db.supplier.findFirst({
     where: { id, tenantId: tenant.id },
+    include: { account: { include: { lines: true } } },
   });
   if (!supplier) notFound();
 
@@ -29,6 +30,10 @@ export default async function SupplierCardPage({
   });
 
   const totalSpent = purchaseOrders.reduce((s, po) => s + po.totalCents, 0);
+  const balance = supplier.account.lines.reduce(
+    (s, l) => s + l.creditCents - l.debitCents,
+    0
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -44,7 +49,13 @@ export default async function SupplierCardPage({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="p-5">
+          <p className="text-sm text-muted">Balance owed</p>
+          <p className="text-xl font-semibold">
+            {formatCents(balance, tenant.currency)}
+          </p>
+        </Card>
         <Card className="p-5">
           <p className="text-sm text-muted">Total spent</p>
           <p className="text-xl font-semibold">
@@ -52,8 +63,8 @@ export default async function SupplierCardPage({
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-sm text-muted">Purchase orders</p>
-          <p className="text-xl font-semibold">{purchaseOrders.length}</p>
+          <p className="text-sm text-muted">Ledger account</p>
+          <p className="font-mono text-xl font-semibold">{supplier.account.code}</p>
         </Card>
       </div>
 

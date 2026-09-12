@@ -171,16 +171,16 @@ async function getOrCreateCustomerAccountTx(
   if (existing) return existing;
 
   const receivablesParent = await tx.account.findUnique({
-    where: { tenantId_code: { tenantId, code: "1200" } },
+    where: { tenantId_code: { tenantId, code: "401" } },
   });
   if (!receivablesParent) {
     throw new Error(
-      'No "Accounts Receivable" (1200) account found — it should have been seeded when your business was created.'
+      'No "Customers" (401) account found — it should have been seeded when your business was created.'
     );
   }
 
   const customerCount = await tx.customer.count({ where: { tenantId } });
-  const accountCode = `1200-${customerCount + 1}`;
+  const accountCode = `401-${customerCount + 1}`;
   const customerCode = `CUST-${String(customerCount + 1).padStart(4, "0")}`;
 
   const account = await tx.account.create({

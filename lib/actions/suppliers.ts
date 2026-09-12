@@ -24,21 +24,45 @@ export async function createSupplier(
   });
   if (existing) return { error: "A supplier with that name already exists." };
 
+  const payablesParent = await db.account.findUnique({
+    where: { tenantId_code: { tenantId: tenant.id, code: "411" } },
+  });
+  if (!payablesParent) {
+    return {
+      error:
+        'No "Suppliers" (411) account found — it should have been seeded when your business was created.',
+    };
+  }
+
   const count = await db.supplier.count({ where: { tenantId: tenant.id } });
 
-  await db.supplier.create({
-    data: {
-      tenantId: tenant.id,
-      name,
-      code: `SUP-${String(count + 1).padStart(4, "0")}`,
-      phone: phone || null,
-      email: email || null,
-      address: address || null,
-    },
+  await db.$transaction(async (tx) => {
+    const account = await tx.account.create({
+      data: {
+        tenantId: tenant.id,
+        code: `411-${count + 1}`,
+        name,
+        type: "LIABILITY",
+        parentId: payablesParent.id,
+      },
+    });
+
+    await tx.supplier.create({
+      data: {
+        tenantId: tenant.id,
+        name,
+        code: `SUP-${String(count + 1).padStart(4, "0")}`,
+        phone: phone || null,
+        email: email || null,
+        address: address || null,
+        accountId: account.id,
+      },
+    });
   });
 
   revalidatePath("/suppliers");
   revalidatePath("/purchases");
+  revalidatePath("/accounts");
   return {};
 }
 

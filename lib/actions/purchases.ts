@@ -43,16 +43,16 @@ export async function createPurchaseOrder(
     0
   );
 
-  const [inventory, accountsPayable] = await Promise.all([
+  const [inventory, payablesParent] = await Promise.all([
     db.account.findUnique({
       where: { tenantId_code: { tenantId: tenant.id, code: "1400" } },
     }),
     db.account.findUnique({
-      where: { tenantId_code: { tenantId: tenant.id, code: "2000" } },
+      where: { tenantId_code: { tenantId: tenant.id, code: "411" } },
     }),
   ]);
-  if (!inventory || !accountsPayable) {
-    return { error: "Required accounts (Inventory / Accounts Payable) are missing." };
+  if (!inventory || !payablesParent) {
+    return { error: 'Required accounts (Inventory / "Suppliers" 411) are missing.' };
   }
 
   try {
@@ -64,11 +64,21 @@ export async function createPurchaseOrder(
         const supplierCount = await tx.supplier.count({
           where: { tenantId: tenant.id },
         });
+        const account = await tx.account.create({
+          data: {
+            tenantId: tenant.id,
+            code: `411-${supplierCount + 1}`,
+            name: supplierName,
+            type: "LIABILITY",
+            parentId: payablesParent.id,
+          },
+        });
         supplier = await tx.supplier.create({
           data: {
             tenantId: tenant.id,
             name: supplierName,
             code: `SUP-${String(supplierCount + 1).padStart(4, "0")}`,
+            accountId: account.id,
           },
         });
       }
@@ -82,7 +92,7 @@ export async function createPurchaseOrder(
           lines: {
             create: [
               { accountId: inventory.id, debitCents: totalCents, creditCents: 0 },
-              { accountId: accountsPayable.id, debitCents: 0, creditCents: totalCents },
+              { accountId: supplier.accountId, debitCents: 0, creditCents: totalCents },
             ],
           },
         },
