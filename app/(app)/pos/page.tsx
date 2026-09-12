@@ -16,8 +16,8 @@ function formatCents(cents: number, currency: string): string {
 export default async function POSPage() {
   const { tenant } = await requireTenant();
 
-  const [products, customers, recentOrders] = await Promise.all([
-    db.product.findMany({
+  const [items, customers, recentOrders] = await Promise.all([
+    db.item.findMany({
       where: { tenantId: tenant.id },
       orderBy: { createdAt: "asc" },
     }),
@@ -42,7 +42,7 @@ export default async function POSPage() {
       </div>
 
       <POSForm
-        products={products.map((p) => ({
+        items={items.map((p) => ({
           id: p.id,
           name: p.name,
           priceCents: p.priceCents,

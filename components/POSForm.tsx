@@ -10,7 +10,7 @@ const initialState: ActionState = {};
 const inputClass =
   "rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft";
 
-type Product = { id: string; name: string; priceCents: number };
+type Item = { id: string; name: string; priceCents: number };
 
 const ORDER_TYPES: { value: string; label: string }[] = [
   { value: "DINE_IN", label: "Dine-in" },
@@ -25,11 +25,11 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default function POSForm({
-  products,
+  items: catalogItems,
   customerNames,
   currency,
 }: {
-  products: Product[];
+  items: Item[];
   customerNames: string[];
   currency: string;
 }) {
@@ -81,14 +81,14 @@ export default function POSForm({
     () =>
       Object.entries(cart)
         .map(([id, qty]) => {
-          const product = products.find((p) => p.id === id);
-          return product ? { product, qty } : null;
+          const item = catalogItems.find((p) => p.id === id);
+          return item ? { item, qty } : null;
         })
-        .filter((l): l is { product: Product; qty: number } => l !== null),
-    [cart, products]
+        .filter((l): l is { item: Item; qty: number } => l !== null),
+    [cart, catalogItems]
   );
 
-  const subtotal = lines.reduce((s, l) => s + l.product.priceCents * l.qty, 0);
+  const subtotal = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
   const tax = Math.round(subtotal * VAT_RATE);
   const total = subtotal + tax;
 
@@ -174,13 +174,13 @@ export default function POSForm({
 
         <Card className="p-5">
           <h2 className="mb-3 font-semibold">Menu</h2>
-          {products.length === 0 ? (
+          {catalogItems.length === 0 ? (
             <p className="text-sm text-muted">
-              No items yet — add some on the Products page first.
+              No items yet — add some on the Items page first.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {products.map((p) => (
+              {catalogItems.map((p) => (
                 <button
                   key={p.id}
                   type="button"
@@ -204,14 +204,14 @@ export default function POSForm({
           <p className="text-sm text-muted">Tap menu items to add them.</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {lines.map(({ product, qty }) => (
-              <div key={product.id} className="flex items-center gap-2 text-sm">
-                <input type="hidden" name="productId" value={product.id} />
+            {lines.map(({ item, qty }) => (
+              <div key={item.id} className="flex items-center gap-2 text-sm">
+                <input type="hidden" name="itemId" value={item.id} />
                 <input type="hidden" name="quantity" value={qty} />
-                <span className="flex-1">{product.name}</span>
+                <span className="flex-1">{item.name}</span>
                 <button
                   type="button"
-                  onClick={() => setQty(product.id, qty - 1)}
+                  onClick={() => setQty(item.id, qty - 1)}
                   className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
                 >
                   −
@@ -219,13 +219,13 @@ export default function POSForm({
                 <span className="w-5 text-center tabular-nums">{qty}</span>
                 <button
                   type="button"
-                  onClick={() => setQty(product.id, qty + 1)}
+                  onClick={() => setQty(item.id, qty + 1)}
                   className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
                 >
                   +
                 </button>
                 <span className="w-16 text-right tabular-nums">
-                  {formatCents(product.priceCents * qty, currency)}
+                  {formatCents(item.priceCents * qty, currency)}
                 </span>
               </div>
             ))}

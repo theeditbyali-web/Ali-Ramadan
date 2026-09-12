@@ -23,7 +23,7 @@ export async function createOrder(
     orderType !== "DINE_IN" && cutleryItems.length > 0
       ? cutleryItems.join(",")
       : null;
-  const productIds = formData.getAll("productId").map(String);
+  const itemIds = formData.getAll("itemId").map(String);
   const quantities = formData
     .getAll("quantity")
     .map((v) => Math.max(0, Math.floor(Number(v) || 0)));
@@ -33,36 +33,36 @@ export async function createOrder(
     return { error: "Select an order type." };
   }
 
-  const lineInputs = productIds
-    .map((productId, i) => ({ productId, quantity: quantities[i] || 0 }))
-    .filter((l) => l.productId && l.quantity > 0);
+  const lineInputs = itemIds
+    .map((itemId, i) => ({ itemId, quantity: quantities[i] || 0 }))
+    .filter((l) => l.itemId && l.quantity > 0);
 
   if (lineInputs.length === 0) {
     return { error: "Add at least one item to the order." };
   }
 
-  const products = await db.product.findMany({
+  const catalogItems = await db.item.findMany({
     where: {
       tenantId: tenant.id,
-      id: { in: lineInputs.map((l) => l.productId) },
+      id: { in: lineInputs.map((l) => l.itemId) },
     },
   });
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  const itemMap = new Map(catalogItems.map((p) => [p.id, p]));
 
-  if (productMap.size !== new Set(lineInputs.map((l) => l.productId)).size) {
+  if (itemMap.size !== new Set(lineInputs.map((l) => l.itemId)).size) {
     return { error: "One or more items are invalid." };
   }
 
-  const items = lineInputs.map((l) => {
-    const product = productMap.get(l.productId)!;
+  const orderLines = lineInputs.map((l) => {
+    const item = itemMap.get(l.itemId)!;
     return {
-      productId: product.id,
+      itemId: item.id,
       quantity: l.quantity,
-      priceCents: product.priceCents,
+      priceCents: item.priceCents,
     };
   });
 
-  const subtotalCents = items.reduce(
+  const subtotalCents = orderLines.reduce(
     (s, i) => s + i.priceCents * i.quantity,
     0
   );
@@ -117,8 +117,18 @@ export async function createOrder(
           taxCents,
           totalCents,
           journalEntryId: journalEntry.id,
-          items: { create: items },
+          items: { create: orderLines },
         },
+      });
+
+      await tx.itemMovement.createMany({
+        data: orderLines.map((l) => ({
+          tenantId: tenant.id,
+          itemId: l.itemId,
+          type: "SALE_OUT" as const,
+          quantity: -l.quantity,
+          note: `${orderTypeLabel(orderType)} order — ${customerName}`,
+        })),
       });
     });
   } catch (err) {

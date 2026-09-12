@@ -10,12 +10,14 @@ import {
   ReceiptIcon,
   TagIcon,
   UsersIcon,
+  BoxIcon,
 } from "@/components/icons";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/pos", label: "Point of Sale", icon: ReceiptIcon },
-  { href: "/products", label: "Menu / Products", icon: TagIcon },
+  { href: "/items", label: "Items", icon: TagIcon },
+  { href: "/purchases", label: "Purchase Orders", icon: BoxIcon },
   { href: "/customers", label: "Customers", icon: UsersIcon },
   { href: "/accounts", label: "Chart of Accounts", icon: BookIcon },
   { href: "/journal", label: "Journal", icon: LedgerIcon },

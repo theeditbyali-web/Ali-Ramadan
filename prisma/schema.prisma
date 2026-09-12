@@ -30,18 +30,26 @@ enum OrderType {
   DELIVERY
 }
 
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  ADJUSTMENT
+}
+
 model Tenant {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String
-  country        String         @default("LB")
-  currency       String         @default("USD")
-  createdAt      DateTime       @default(now())
+  country        String          @default("LB")
+  currency       String          @default("USD")
+  createdAt      DateTime        @default(now())
   memberships    Membership[]
   accounts       Account[]
   journalEntries JournalEntry[]
   customers      Customer[]
-  products       Product[]
+  items          Item[]
   orders         Order[]
+  purchaseOrders PurchaseOrder[]
+  itemMovements  ItemMovement[]
 }
 
 model User {
@@ -91,6 +99,7 @@ model JournalEntry {
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lines     JournalLine[]
   order     Order?
+  purchaseOrder PurchaseOrder?
 }
 
 model JournalLine {
@@ -119,14 +128,73 @@ model Customer {
   @@unique([tenantId, name])
 }
 
-model Product {
+model Item {
   id         String      @id @default(cuid())
   tenantId   String
   name       String
+  category   String?
+  unit       String      @default("unit")
   priceCents Int
   createdAt  DateTime    @default(now())
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  purchaseLines PurchaseOrderLine[]
+  movements  ItemMovement[]
+
+  // Recipe: what this item is made of (sub-items) and, in reverse, which
+  // other items use this one as a sub-item.
+  components ItemComponent[] @relation("ParentItem")
+  usedIn     ItemComponent[] @relation("ComponentItem")
+}
+
+// A sub-item / ingredient relationship: `quantity` units of componentItem
+// are needed to make one unit of parentItem.
+model ItemComponent {
+  id              String @id @default(cuid())
+  parentItemId    String
+  componentItemId String
+  quantity        Float
+  parentItem      Item   @relation("ParentItem", fields: [parentItemId], references: [id], onDelete: Cascade)
+  componentItem   Item   @relation("ComponentItem", fields: [componentItemId], references: [id])
+
+  @@unique([parentItemId, componentItemId])
+}
+
+model PurchaseOrder {
+  id             String              @id @default(cuid())
+  tenantId       String
+  supplierName   String
+  date           DateTime            @default(now())
+  totalCents     Int
+  createdAt      DateTime            @default(now())
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines          PurchaseOrderLine[]
+  journalEntryId String              @unique
+  journalEntry   JournalEntry        @relation(fields: [journalEntryId], references: [id])
+}
+
+model PurchaseOrderLine {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  itemId          String
+  quantity        Float
+  unitCostCents   Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item            Item          @relation(fields: [itemId], references: [id])
+}
+
+// A stock ledger entry — purchases in, sales out, manual adjustments.
+// `quantity` is signed: positive for stock coming in, negative for going out.
+model ItemMovement {
+  id        String       @id @default(cuid())
+  tenantId  String
+  itemId    String
+  type      MovementType
+  quantity  Float
+  note      String?
+  createdAt DateTime     @default(now())
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  item      Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -147,11 +215,11 @@ model Order {
 }
 
 model OrderItem {
-  id         String  @id @default(cuid())
+  id         String @id @default(cuid())
   orderId    String
-  productId  String
+  itemId     String
   quantity   Int
   priceCents Int
-  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product @relation(fields: [productId], references: [id])
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item       Item   @relation(fields: [itemId], references: [id])
 }

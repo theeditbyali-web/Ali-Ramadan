@@ -7,7 +7,8 @@ const PROTECTED_PREFIXES = [
   "/journal",
   "/reports",
   "/pos",
-  "/products",
+  "/items",
+  "/purchases",
   "/customers",
 ];
 
@@ -43,7 +44,8 @@ export const config = {
     "/journal/:path*",
     "/reports/:path*",
     "/pos/:path*",
-    "/products/:path*",
+    "/items/:path*",
+    "/purchases/:path*",
     "/customers/:path*",
   ],
 };

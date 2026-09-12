@@ -81,6 +81,15 @@ export function TagIcon({ className = base }: IconProps) {
   );
 }
 
+export function BoxIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M12 3.5 20.5 8v8L12 20.5 3.5 16V8Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 8 12 12.5 20.5 8M12 12.5V20.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function UsersIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
