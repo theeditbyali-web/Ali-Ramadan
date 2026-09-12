@@ -47,6 +47,15 @@ export default function ItemForm() {
             className={`w-28 ${inputClass}`}
           />
         </label>
+        <label className="flex items-center gap-2 pb-2 text-sm font-medium">
+          <input
+            name="sellable"
+            type="checkbox"
+            defaultChecked
+            className="h-4 w-4 rounded border-border accent-accent"
+          />
+          Sell at POS
+        </label>
         <Button type="submit" disabled={pending}>
           {pending ? "Adding…" : "Add item"}
         </Button>

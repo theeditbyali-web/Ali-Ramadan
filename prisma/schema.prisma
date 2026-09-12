@@ -134,6 +134,7 @@ model Item {
   name       String
   category   String?
   unit       String      @default("unit")
+  sellable   Boolean     @default(true) // shown at the POS register when true
   priceCents Int
   createdAt  DateTime    @default(now())
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)

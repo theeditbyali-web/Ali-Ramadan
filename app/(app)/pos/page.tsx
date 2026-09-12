@@ -18,7 +18,7 @@ export default async function POSPage() {
 
   const [items, customers, recentOrders] = await Promise.all([
     db.item.findMany({
-      where: { tenantId: tenant.id },
+      where: { tenantId: tenant.id, sellable: true },
       orderBy: { createdAt: "asc" },
     }),
     db.customer.findMany({

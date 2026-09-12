@@ -16,6 +16,7 @@ export async function createItem(
   const category = String(formData.get("category") || "").trim();
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
+  const sellable = formData.get("sellable") === "on";
 
   if (!name) return { error: "Name is required." };
   if (!(price > 0)) return { error: "Price must be greater than 0." };
@@ -27,6 +28,7 @@ export async function createItem(
       category: category || null,
       unit,
       priceCents: Math.round(price * 100),
+      sellable,
     },
   });
 
@@ -46,6 +48,7 @@ export async function updateItem(
   const category = String(formData.get("category") || "").trim();
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
+  const sellable = formData.get("sellable") === "on";
 
   if (!id) return { error: "Missing item id." };
   if (!name) return { error: "Name is required." };
@@ -63,6 +66,7 @@ export async function updateItem(
       category: category || null,
       unit,
       priceCents: Math.round(price * 100),
+      sellable,
     },
   });
 

@@ -45,6 +45,7 @@ export default async function ItemsPage() {
               <th className="px-5 py-3 text-right">Price</th>
               <th className="px-5 py-3 text-right">Cost</th>
               <th className="px-5 py-3 text-right">Profit %</th>
+              <th className="px-5 py-3">Sold at POS</th>
             </tr>
           </thead>
           <tbody>
@@ -75,11 +76,14 @@ export default async function ItemsPage() {
                 >
                   {profitPercent !== null ? `${profitPercent.toFixed(1)}%` : "—"}
                 </td>
+                <td className="px-5 py-3 text-muted">
+                  {item.sellable ? "Yes" : "No"}
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-6 text-center text-muted">
+                <td colSpan={7} className="px-5 py-6 text-center text-muted">
                   No items yet — add your first one above.
                 </td>
               </tr>
