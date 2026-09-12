@@ -3,12 +3,19 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import CustomerEditForm from "@/components/CustomerEditForm";
+import PaymentForm from "@/components/PaymentForm";
 import Card from "@/components/ui/Card";
 
 const TYPE_LABEL: Record<string, string> = {
   DINE_IN: "Dine-in",
   TAKEAWAY: "Takeaway",
   DELIVERY: "Delivery",
+};
+
+const METHOD_LABEL: Record<string, string> = {
+  CASH: "Cash",
+  BANK: "Bank",
+  WHISH: "Whish",
 };
 
 function formatCents(cents: number, currency: string): string {
@@ -29,10 +36,16 @@ export default async function CustomerCardPage({
   });
   if (!customer) notFound();
 
-  const orders = await db.order.findMany({
-    where: { customerId: customer.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const [orders, payments] = await Promise.all([
+    db.order.findMany({
+      where: { customerId: customer.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.payment.findMany({
+      where: { customerId: customer.id },
+      orderBy: { date: "desc" },
+    }),
+  ]);
 
   const balance = customer.account.lines.reduce(
     (s, l) => s + l.debitCents - l.creditCents,
@@ -71,6 +84,45 @@ export default async function CustomerCardPage({
       </div>
 
       <CustomerEditForm customer={customer} />
+
+      <PaymentForm kind="customer" id={customer.id} />
+
+      <Card className="overflow-hidden">
+        <div className="p-5 pb-0">
+          <h2 className="font-semibold">Payment history</h2>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-muted">
+              <th className="px-5 py-3">Date</th>
+              <th className="px-5 py-3">Method</th>
+              <th className="px-5 py-3">Note</th>
+              <th className="px-5 py-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p) => (
+              <tr key={p.id} className="border-b border-border last:border-0">
+                <td className="px-5 py-3 text-muted">
+                  {p.date.toISOString().slice(0, 16).replace("T", " ")}
+                </td>
+                <td className="px-5 py-3">{METHOD_LABEL[p.method]}</td>
+                <td className="px-5 py-3 text-muted">{p.note}</td>
+                <td className="px-5 py-3 text-right tabular-nums font-medium">
+                  {formatCents(p.amountCents, tenant.currency)}
+                </td>
+              </tr>
+            ))}
+            {payments.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-5 py-6 text-center text-muted">
+                  No payments recorded yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
 
       <Card className="overflow-hidden">
         <div className="p-5 pb-0">

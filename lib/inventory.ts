@@ -70,3 +70,46 @@ export function calculateProfitPercent(
   if (costCents === null || priceCents <= 0) return null;
   return ((priceCents - costCents) / priceCents) * 100;
 }
+
+type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+/**
+ * Selling `quantity` units of `itemId` should deduct stock from whatever is
+ * actually stocked. If the item has a recipe (sub-items), it isn't stocked
+ * itself — recurse into its components instead, scaling by their per-unit
+ * quantity. Leaf items (no recipe) are deducted directly. Quantities for
+ * the same leaf item reached via different paths are combined.
+ */
+export async function expandSaleToStockDeductions(
+  tx: Tx,
+  itemId: string,
+  quantity: number,
+  _visiting: Set<string> = new Set()
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (_visiting.has(itemId)) return result; // circular recipe guard
+  _visiting.add(itemId);
+
+  const components = await tx.itemComponent.findMany({
+    where: { parentItemId: itemId },
+  });
+
+  if (components.length === 0) {
+    result.set(itemId, quantity);
+    return result;
+  }
+
+  for (const c of components) {
+    const sub = await expandSaleToStockDeductions(
+      tx,
+      c.componentItemId,
+      c.quantity * quantity,
+      _visiting
+    );
+    for (const [id, qty] of sub) {
+      result.set(id, (result.get(id) ?? 0) + qty);
+    }
+  }
+
+  return result;
+}

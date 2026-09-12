@@ -45,6 +45,7 @@ export default function POSForm({
   const [cart, setCart] = useState<Record<string, number>>({});
   const [orderType, setOrderType] = useState("DINE_IN");
   const [paymentMethod, setPaymentMethod] = useState("ON_ACCOUNT");
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [cutlery, setCutlery] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const isFirstRender = useRef(true);
@@ -58,6 +59,7 @@ export default function POSForm({
       setCart({});
       setOrderType("DINE_IN");
       setPaymentMethod("ON_ACCOUNT");
+      setDiscountPercent(0);
       setCutlery([]);
       formRef.current?.reset();
     }
@@ -95,7 +97,9 @@ export default function POSForm({
     [cart, catalogItems]
   );
 
-  const subtotal = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
+  const grossSubtotal = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
+  const discount = Math.round((grossSubtotal * discountPercent) / 100);
+  const subtotal = grossSubtotal - discount;
   const tax = Math.round(subtotal * VAT_RATE);
   const total = subtotal + tax;
 
@@ -264,11 +268,32 @@ export default function POSForm({
           </div>
         )}
 
+        <label className="flex items-center justify-between gap-3 text-sm font-medium">
+          Discount %
+          <input
+            name="discountPercent"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value={discountPercent || ""}
+            onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
+            placeholder="0"
+            className={`w-20 text-right ${inputClass}`}
+          />
+        </label>
+
         <div className="flex flex-col gap-1 border-t border-border pt-3 text-sm">
           <div className="flex justify-between text-muted">
             <span>Subtotal</span>
-            <span className="tabular-nums">{formatCents(subtotal, currency)}</span>
+            <span className="tabular-nums">{formatCents(grossSubtotal, currency)}</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-muted">
+              <span>Discount ({discountPercent}%)</span>
+              <span className="tabular-nums">−{formatCents(discount, currency)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-muted">
             <span>VAT ({Math.round(VAT_RATE * 100)}%)</span>
             <span className="tabular-nums">{formatCents(tax, currency)}</span>

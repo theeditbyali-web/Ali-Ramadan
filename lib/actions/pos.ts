@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { calculateTax } from "@/lib/tax";
+import { expandSaleToStockDeductions } from "@/lib/inventory";
 import type { OrderType, PaymentMethod } from "@prisma/client";
 
 export type ActionState = { error?: string };
@@ -26,6 +27,10 @@ export async function createOrder(
     orderType !== "DINE_IN" && cutleryItems.length > 0
       ? cutleryItems.join(",")
       : null;
+  const discountPercent = Math.min(
+    100,
+    Math.max(0, Number(formData.get("discountPercent") || 0))
+  );
   const itemIds = formData.getAll("itemId").map(String);
   const quantities = formData
     .getAll("quantity")
@@ -70,10 +75,12 @@ export async function createOrder(
     };
   });
 
-  const subtotalCents = orderLines.reduce(
+  const grossSubtotalCents = orderLines.reduce(
     (s, i) => s + i.priceCents * i.quantity,
     0
   );
+  const discountCents = Math.round((grossSubtotalCents * discountPercent) / 100);
+  const subtotalCents = grossSubtotalCents - discountCents;
   const taxCents = calculateTax(subtotalCents);
   const totalCents = subtotalCents + taxCents;
 
@@ -98,14 +105,36 @@ export async function createOrder(
   // Split the sale across each item's category revenue account (701-series);
   // items with no category, or whose category has no linked account yet,
   // fall back to the generic Sales Revenue (4000) account.
-  const revenueByAccount = new Map<string, number>();
+  const grossRevenueByAccount = new Map<string, number>();
   for (const line of orderLines) {
     const accountId = line.revenueAccountId ?? fallbackSalesRevenue.id;
     const lineTotal = line.priceCents * line.quantity;
-    revenueByAccount.set(
+    grossRevenueByAccount.set(
       accountId,
-      (revenueByAccount.get(accountId) ?? 0) + lineTotal
+      (grossRevenueByAccount.get(accountId) ?? 0) + lineTotal
     );
+  }
+  // Spread the discount proportionally across each account's share, so the
+  // credited amounts still add up exactly to the post-discount subtotal.
+  const revenueByAccount = new Map<string, number>();
+  if (discountCents > 0 && grossSubtotalCents > 0) {
+    const entries = Array.from(grossRevenueByAccount.entries());
+    let allocated = 0;
+    for (const [accountId, amount] of entries) {
+      const scaled = Math.floor((amount * subtotalCents) / grossSubtotalCents);
+      revenueByAccount.set(accountId, scaled);
+      allocated += scaled;
+    }
+    let remainder = subtotalCents - allocated;
+    for (let i = 0; i < entries.length && remainder > 0; i++) {
+      const [accountId] = entries[i];
+      revenueByAccount.set(accountId, (revenueByAccount.get(accountId) ?? 0) + 1);
+      remainder -= 1;
+    }
+  } else {
+    for (const [accountId, amount] of grossRevenueByAccount) {
+      revenueByAccount.set(accountId, amount);
+    }
   }
 
   try {
@@ -152,6 +181,7 @@ export async function createOrder(
           type: orderType,
           paymentMethod,
           cutlery,
+          discountCents,
           subtotalCents,
           taxCents,
           totalCents,
@@ -166,12 +196,22 @@ export async function createOrder(
         },
       });
 
+      // Deduct stock from whatever is actually stocked: items with a
+      // recipe aren't stocked themselves, so their sale is expanded down
+      // into deductions of their raw-material sub-items instead.
+      const deductions = new Map<string, number>();
+      for (const l of orderLines) {
+        const sub = await expandSaleToStockDeductions(tx, l.itemId, l.quantity);
+        for (const [id, qty] of sub) {
+          deductions.set(id, (deductions.get(id) ?? 0) + qty);
+        }
+      }
       await tx.itemMovement.createMany({
-        data: orderLines.map((l) => ({
+        data: Array.from(deductions.entries()).map(([itemId, qty]) => ({
           tenantId: tenant.id,
-          itemId: l.itemId,
+          itemId,
           type: "SALE_OUT" as const,
-          quantity: -l.quantity,
+          quantity: -qty,
           note: `${orderTypeLabel(orderType)} order — ${customerName}`,
         })),
       });

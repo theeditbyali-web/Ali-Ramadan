@@ -18,6 +18,8 @@ export async function createItem(
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
   const sellable = formData.get("sellable") === "on";
+  const reorderPointRaw = String(formData.get("reorderPoint") || "").trim();
+  const reorderPoint = reorderPointRaw ? Number(reorderPointRaw) : null;
 
   if (!name) return { error: "Name is required." };
   if (!(price > 0)) return { error: "Price must be greater than 0." };
@@ -36,6 +38,7 @@ export async function createItem(
           unit,
           priceCents: Math.round(price * 100),
           sellable,
+          reorderPoint,
         },
       });
     });
@@ -63,6 +66,8 @@ export async function updateItem(
   const unit = String(formData.get("unit") || "unit").trim() || "unit";
   const price = Number(formData.get("price") || 0);
   const sellable = formData.get("sellable") === "on";
+  const reorderPointRaw = String(formData.get("reorderPoint") || "").trim();
+  const reorderPoint = reorderPointRaw ? Number(reorderPointRaw) : null;
 
   if (!id) return { error: "Missing item id." };
   if (!name) return { error: "Name is required." };
@@ -87,6 +92,7 @@ export async function updateItem(
           unit,
           priceCents: Math.round(price * 100),
           sellable,
+          reorderPoint,
         },
       });
     });

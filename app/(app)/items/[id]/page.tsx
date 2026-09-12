@@ -109,10 +109,20 @@ export default async function ItemCardPage({
         </Card>
         <Card className="p-5">
           <p className="text-sm text-muted">Stock on hand</p>
-          <p className="text-xl font-semibold">
+          <p
+            className={`text-xl font-semibold ${
+              item.reorderPoint !== null && stockOnHand <= item.reorderPoint
+                ? "text-danger"
+                : ""
+            }`}
+          >
             {stockOnHand} {item.unit}
           </p>
-          <p className="text-xs text-muted">From purchases and sales</p>
+          <p className="text-xs text-muted">
+            {item.reorderPoint !== null && stockOnHand <= item.reorderPoint
+              ? `Low stock — reorder at ${item.reorderPoint} ${item.unit}`
+              : "From purchases and sales"}
+          </p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-muted">Revenue account</p>

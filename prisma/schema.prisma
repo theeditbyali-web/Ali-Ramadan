@@ -41,6 +41,17 @@ enum PaymentMethod {
   WHISH
 }
 
+enum SettlementMethod {
+  CASH
+  BANK
+  WHISH
+}
+
+enum PaymentDirection {
+  CUSTOMER_RECEIPT
+  SUPPLIER_PAYMENT
+}
+
 model Tenant {
   id             String          @id @default(cuid())
   name           String
@@ -57,6 +68,7 @@ model Tenant {
   orders         Order[]
   purchaseOrders PurchaseOrder[]
   itemMovements  ItemMovement[]
+  payments       Payment[]
 }
 
 model User {
@@ -109,6 +121,7 @@ model JournalEntry {
   lines     JournalLine[]
   order     Order?
   purchaseOrder PurchaseOrder?
+  payment   Payment?
 }
 
 model JournalLine {
@@ -137,6 +150,7 @@ model Customer {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account   Account  @relation(fields: [accountId], references: [id])
   orders    Order[]
+  payments  Payment[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -157,6 +171,7 @@ model Supplier {
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   account        Account         @relation(fields: [accountId], references: [id])
   purchaseOrders PurchaseOrder[]
+  payments       Payment[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, code])
@@ -169,6 +184,7 @@ model Item {
   categoryId String?
   unit       String      @default("unit")
   sellable   Boolean     @default(true) // shown at the POS register when true
+  reorderPoint Float?    // flag as low stock when stock on hand falls to/below this
   priceCents Int
   createdAt  DateTime    @default(now())
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -257,9 +273,11 @@ model Order {
   type           OrderType
   paymentMethod  PaymentMethod @default(ON_ACCOUNT)
   cutlery        String?       // comma-separated selections; only set for TAKEAWAY/DELIVERY
+  discountCents  Int           @default(0)
   subtotalCents  Int
   taxCents       Int
   totalCents     Int
+  refundedAt     DateTime?
   createdAt      DateTime      @default(now())
   tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer       Customer      @relation(fields: [customerId], references: [id])
@@ -276,4 +294,25 @@ model OrderItem {
   priceCents Int
   order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   item       Item   @relation(fields: [itemId], references: [id])
+}
+
+// Settles part or all of a customer's receivable balance, or a payment you
+// make toward a supplier's payable balance. Always posts a journal entry
+// against Cash/Bank/Whish and the specific customer's or supplier's account.
+model Payment {
+  id             String           @id @default(cuid())
+  tenantId       String
+  direction      PaymentDirection
+  customerId     String?
+  supplierId     String?
+  method         SettlementMethod
+  amountCents    Int
+  date           DateTime         @default(now())
+  note           String?
+  createdAt      DateTime         @default(now())
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer       Customer?        @relation(fields: [customerId], references: [id])
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id])
+  journalEntryId String           @unique
+  journalEntry   JournalEntry     @relation(fields: [journalEntryId], references: [id])
 }

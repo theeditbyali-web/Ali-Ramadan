@@ -16,6 +16,7 @@ type Item = {
   unit: string;
   priceCents: number;
   sellable: boolean;
+  reorderPoint: number | null;
 };
 
 export default function ItemEditForm({
@@ -77,6 +78,18 @@ export default function ItemEditForm({
             required
             defaultValue={(item.priceCents / 100).toFixed(2)}
             className={`w-28 ${inputClass}`}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Reorder at
+          <input
+            name="reorderPoint"
+            type="number"
+            step="0.001"
+            min="0"
+            defaultValue={item.reorderPoint ?? ""}
+            placeholder="Optional"
+            className={`w-24 ${inputClass}`}
           />
         </label>
         <label className="flex items-center gap-2 pb-2 text-sm font-medium">

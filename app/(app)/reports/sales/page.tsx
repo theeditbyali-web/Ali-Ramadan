@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { refundOrder } from "@/lib/actions/orders";
 import Card from "@/components/ui/Card";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -138,11 +139,17 @@ export default async function SalesReportPage() {
               <th className="px-5 py-3">Type</th>
               <th className="px-5 py-3">Payment</th>
               <th className="px-5 py-3 text-right">Total</th>
+              <th className="px-5 py-3">&nbsp;</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o.id} className="border-b border-border last:border-0">
+              <tr
+                key={o.id}
+                className={`border-b border-border last:border-0 ${
+                  o.refundedAt ? "opacity-50" : ""
+                }`}
+              >
                 <td className="px-5 py-3 text-muted">
                   {o.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                 </td>
@@ -156,11 +163,26 @@ export default async function SalesReportPage() {
                 <td className="px-5 py-3 text-right tabular-nums font-medium">
                   {formatCents(o.totalCents, tenant.currency)}
                 </td>
+                <td className="px-5 py-3 text-right">
+                  {o.refundedAt ? (
+                    <span className="text-xs text-muted">Refunded</span>
+                  ) : (
+                    <form action={refundOrder}>
+                      <input type="hidden" name="orderId" value={o.id} />
+                      <button
+                        type="submit"
+                        className="text-xs text-muted hover:text-danger hover:underline"
+                      >
+                        Refund
+                      </button>
+                    </form>
+                  )}
+                </td>
               </tr>
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-6 text-center text-muted">
+                <td colSpan={6} className="px-5 py-6 text-center text-muted">
                   No orders yet.
                 </td>
               </tr>

@@ -57,6 +57,17 @@ export default function ItemForm({
             className={`w-28 ${inputClass}`}
           />
         </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Reorder at
+          <input
+            name="reorderPoint"
+            type="number"
+            step="0.001"
+            min="0"
+            placeholder="Optional"
+            className={`w-24 ${inputClass}`}
+          />
+        </label>
         <label className="flex items-center gap-2 pb-2 text-sm font-medium">
           <input
             name="sellable"
