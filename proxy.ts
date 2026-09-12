@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   "/items",
   "/purchases",
   "/customers",
+  "/suppliers",
 ];
 
 async function hasValidSession(req: NextRequest): Promise<boolean> {
@@ -47,5 +48,6 @@ export const config = {
     "/items/:path*",
     "/purchases/:path*",
     "/customers/:path*",
+    "/suppliers/:path*",
   ],
 };

@@ -19,6 +19,7 @@ const NAV = [
   { href: "/items", label: "Items", icon: TagIcon },
   { href: "/purchases", label: "Purchase Orders", icon: BoxIcon },
   { href: "/customers", label: "Customers", icon: UsersIcon },
+  { href: "/suppliers", label: "Suppliers", icon: UsersIcon },
   { href: "/accounts", label: "Chart of Accounts", icon: BookIcon },
   { href: "/journal", label: "Journal", icon: LedgerIcon },
   { href: "/reports/trial-balance", label: "Trial Balance", icon: ChartIcon },

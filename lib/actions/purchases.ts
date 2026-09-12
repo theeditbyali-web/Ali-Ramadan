@@ -57,6 +57,22 @@ export async function createPurchaseOrder(
 
   try {
     await db.$transaction(async (tx) => {
+      let supplier = await tx.supplier.findUnique({
+        where: { tenantId_name: { tenantId: tenant.id, name: supplierName } },
+      });
+      if (!supplier) {
+        const supplierCount = await tx.supplier.count({
+          where: { tenantId: tenant.id },
+        });
+        supplier = await tx.supplier.create({
+          data: {
+            tenantId: tenant.id,
+            name: supplierName,
+            code: `SUP-${String(supplierCount + 1).padStart(4, "0")}`,
+          },
+        });
+      }
+
       const journalEntry = await tx.journalEntry.create({
         data: {
           tenantId: tenant.id,
@@ -75,7 +91,7 @@ export async function createPurchaseOrder(
       await tx.purchaseOrder.create({
         data: {
           tenantId: tenant.id,
-          supplierName,
+          supplierId: supplier.id,
           totalCents,
           journalEntryId: journalEntry.id,
           lines: { create: lineInputs },
@@ -99,6 +115,7 @@ export async function createPurchaseOrder(
   }
 
   revalidatePath("/purchases");
+  revalidatePath("/suppliers");
   revalidatePath("/items");
   revalidatePath("/journal");
   revalidatePath("/accounts");

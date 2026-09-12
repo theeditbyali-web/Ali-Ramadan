@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import PurchaseOrderForm from "@/components/PurchaseOrderForm";
@@ -10,17 +11,22 @@ function formatCents(cents: number, currency: string): string {
 export default async function PurchasesPage() {
   const { tenant } = await requireTenant();
 
-  const [items, purchaseOrders] = await Promise.all([
+  const [items, suppliers, purchaseOrders] = await Promise.all([
     db.item.findMany({
       where: { tenantId: tenant.id },
       orderBy: { name: "asc" },
       select: { id: true, name: true, unit: true },
     }),
+    db.supplier.findMany({
+      where: { tenantId: tenant.id },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
     db.purchaseOrder.findMany({
       where: { tenantId: tenant.id },
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: { lines: { include: { item: true } } },
+      include: { lines: { include: { item: true } }, supplier: true },
     }),
   ]);
 
@@ -34,7 +40,10 @@ export default async function PurchasesPage() {
         </p>
       </div>
 
-      <PurchaseOrderForm items={items} />
+      <PurchaseOrderForm
+        items={items}
+        supplierNames={suppliers.map((s) => s.name)}
+      />
 
       <div className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
@@ -46,7 +55,9 @@ export default async function PurchasesPage() {
         {purchaseOrders.map((po) => (
           <Card key={po.id} className="p-5 text-sm">
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-medium">{po.supplierName}</span>
+              <Link href={`/suppliers/${po.supplier.id}`} className="font-medium hover:underline">
+                {po.supplier.name}
+              </Link>
               <span className="text-muted">
                 {po.date.toISOString().slice(0, 10)}
               </span>

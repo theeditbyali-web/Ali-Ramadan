@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import Card from "@/components/ui/Card";
@@ -31,6 +32,7 @@ export default async function CustomersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-muted">
+              <th className="px-5 py-3">ID</th>
               <th className="px-5 py-3">Customer</th>
               <th className="px-5 py-3">Account</th>
               <th className="px-5 py-3">Orders</th>
@@ -45,7 +47,12 @@ export default async function CustomersPage() {
               );
               return (
                 <tr key={c.id} className="border-b border-border last:border-0 hover:bg-slate-50">
-                  <td className="px-5 py-3 font-medium">{c.name}</td>
+                  <td className="px-5 py-3 font-mono text-muted">{c.code}</td>
+                  <td className="px-5 py-3 font-medium">
+                    <Link href={`/customers/${c.id}`} className="hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3 font-mono text-muted">
                     {c.account.code}
                   </td>
@@ -58,7 +65,7 @@ export default async function CustomersPage() {
             })}
             {customers.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-5 py-6 text-center text-muted">
+                <td colSpan={5} className="px-5 py-6 text-center text-muted">
                   No customers yet — they're created automatically from the
                   POS when you ring up an order.
                 </td>

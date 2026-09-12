@@ -180,12 +180,13 @@ async function getOrCreateCustomerAccountTx(
   }
 
   const customerCount = await tx.customer.count({ where: { tenantId } });
-  const code = `1200-${customerCount + 1}`;
+  const accountCode = `1200-${customerCount + 1}`;
+  const customerCode = `CUST-${String(customerCount + 1).padStart(4, "0")}`;
 
   const account = await tx.account.create({
     data: {
       tenantId,
-      code,
+      code: accountCode,
       name,
       type: "ASSET",
       parentId: receivablesParent.id,
@@ -193,6 +194,6 @@ async function getOrCreateCustomerAccountTx(
   });
 
   return tx.customer.create({
-    data: { tenantId, name, accountId: account.id },
+    data: { tenantId, name, code: customerCode, accountId: account.id },
   });
 }

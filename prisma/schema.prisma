@@ -46,6 +46,7 @@ model Tenant {
   accounts       Account[]
   journalEntries JournalEntry[]
   customers      Customer[]
+  suppliers      Supplier[]
   items          Item[]
   orders         Order[]
   purchaseOrders PurchaseOrder[]
@@ -118,7 +119,11 @@ model JournalLine {
 model Customer {
   id        String   @id @default(cuid())
   tenantId  String
+  code      String // e.g. CUST-0001, this customer's ID card number
   name      String
+  phone     String?
+  email     String?
+  address   String?
   accountId String   @unique
   createdAt DateTime @default(now())
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -126,6 +131,25 @@ model Customer {
   orders    Order[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, code])
+}
+
+// A supplier you buy items from. Each gets an ID card of its own,
+// mirroring the customer card.
+model Supplier {
+  id             String          @id @default(cuid())
+  tenantId       String
+  code           String // e.g. SUP-0001
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
 }
 
 model Item {
@@ -164,11 +188,12 @@ model ItemComponent {
 model PurchaseOrder {
   id             String              @id @default(cuid())
   tenantId       String
-  supplierName   String
+  supplierId     String
   date           DateTime            @default(now())
   totalCents     Int
   createdAt      DateTime            @default(now())
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier       Supplier            @relation(fields: [supplierId], references: [id])
   lines          PurchaseOrderLine[]
   journalEntryId String              @unique
   journalEntry   JournalEntry        @relation(fields: [journalEntryId], references: [id])

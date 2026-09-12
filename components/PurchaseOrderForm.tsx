@@ -13,8 +13,10 @@ type ItemOption = { id: string; name: string; unit: string };
 
 export default function PurchaseOrderForm({
   items,
+  supplierNames,
 }: {
   items: ItemOption[];
+  supplierNames: string[];
 }) {
   const [state, formAction, pending] = useActionState(
     createPurchaseOrder,
@@ -28,7 +30,17 @@ export default function PurchaseOrderForm({
       <form action={formAction} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Supplier
-          <input name="supplierName" required className={`max-w-xs ${inputClass}`} />
+          <input
+            name="supplierName"
+            required
+            list="supplier-names"
+            className={`max-w-xs ${inputClass}`}
+          />
+          <datalist id="supplier-names">
+            {supplierNames.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
         </label>
 
         <div className="flex flex-col gap-2">
