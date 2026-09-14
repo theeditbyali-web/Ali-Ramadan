@@ -7,8 +7,17 @@ function formatCents(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency });
 }
 
-export default async function ProfitLossPage() {
+export default async function ProfitLossPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   const { tenant } = await requireTenant();
+  const { from, to } = await searchParams;
+
+  const date: { gte?: Date; lte?: Date } = {};
+  if (from) date.gte = new Date(`${from}T00:00:00`);
+  if (to) date.lte = new Date(`${to}T23:59:59.999`);
 
   const accounts = await db.account.findMany({
     where: {
@@ -16,7 +25,9 @@ export default async function ProfitLossPage() {
       type: { in: ["REVENUE", "EXPENSE"] },
     },
     orderBy: { code: "asc" },
-    include: { lines: true },
+    include: {
+      lines: from || to ? { where: { journalEntry: { date } } } : true,
+    },
   });
 
   const revenueAccounts = accounts
@@ -46,8 +57,45 @@ export default async function ProfitLossPage() {
           ← Reports
         </Link>
         <h1 className="mt-1 text-2xl font-semibold">Profit & Loss</h1>
-        <p className="text-muted">Revenue minus expenses, all-time.</p>
+        <p className="text-muted">
+          Revenue minus expenses{from || to ? "" : ", all-time"}.
+        </p>
       </div>
+
+      <form className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          From
+          <input
+            type="date"
+            name="from"
+            defaultValue={from}
+            className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          To
+          <input
+            type="date"
+            name="to"
+            defaultValue={to}
+            className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+        </label>
+        <button
+          type="submit"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50"
+        >
+          Filter
+        </button>
+        {(from || to) && (
+          <Link
+            href="/reports/profit-loss"
+            className="text-sm text-muted hover:underline"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
 
       <Card className="p-5">
         <p className="text-sm text-muted">Net income</p>

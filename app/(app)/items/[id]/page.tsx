@@ -12,6 +12,9 @@ const MOVEMENT_LABEL: Record<string, string> = {
   PURCHASE_IN: "Purchase in",
   SALE_OUT: "Sale",
   ADJUSTMENT: "Adjustment",
+  WASTE_OUT: "Waste",
+  PRODUCTION_IN: "Produced",
+  PRODUCTION_OUT: "Used in production",
 };
 
 function formatCents(cents: number, currency: string): string {

@@ -19,11 +19,23 @@ function formatCents(cents: number, currency: string): string {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency });
 }
 
-export default async function SalesReportPage() {
+export default async function SalesReportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   const { tenant } = await requireTenant();
+  const { from, to } = await searchParams;
+
+  const createdAt: { gte?: Date; lte?: Date } = {};
+  if (from) createdAt.gte = new Date(`${from}T00:00:00`);
+  if (to) createdAt.lte = new Date(`${to}T23:59:59.999`);
 
   const orders = await db.order.findMany({
-    where: { tenantId: tenant.id },
+    where: {
+      tenantId: tenant.id,
+      ...(from || to ? { createdAt } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: { customer: true },
   });
@@ -54,8 +66,46 @@ export default async function SalesReportPage() {
           ← Reports
         </Link>
         <h1 className="mt-1 text-2xl font-semibold">Sales Report</h1>
-        <p className="text-muted">Orders, revenue, and totals — all-time.</p>
+        <p className="text-muted">
+          Orders, revenue, and totals
+          {from || to ? "" : " — all-time"}.
+        </p>
       </div>
+
+      <form className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          From
+          <input
+            type="date"
+            name="from"
+            defaultValue={from}
+            className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          To
+          <input
+            type="date"
+            name="to"
+            defaultValue={to}
+            className="rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+          />
+        </label>
+        <button
+          type="submit"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-slate-50"
+        >
+          Filter
+        </button>
+        {(from || to) && (
+          <Link
+            href="/reports/sales"
+            className="text-sm text-muted hover:underline"
+          >
+            Clear
+          </Link>
+        )}
+      </form>
 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card className="p-5">

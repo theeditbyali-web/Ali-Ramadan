@@ -90,6 +90,55 @@ export function BoxIcon({ className = base }: IconProps) {
   );
 }
 
+export function TrashIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M4 7h16M9.5 7V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.5 7 7.3 19.2a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 11v6M14 11v6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function FactoryIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M4 20.5V11l5 3.5V11l5 3.5V9l6 4v7.5Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 20.5h16" strokeLinecap="round" />
+      <path d="M8.5 5V3M8.5 9V6.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function TrendUpIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M3.5 16.5 9.5 10.5 13.5 14.5 20.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.5 6.5h6v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function AlertIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M12 3.5 21.5 20h-19Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 10v4" strokeLinecap="round" />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function WalletIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>
+      <path d="M3.5 7.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.5 12.5h3v3h-3a1.5 1.5 0 0 1 0-3Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.5 7.5 15 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function UsersIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className}>

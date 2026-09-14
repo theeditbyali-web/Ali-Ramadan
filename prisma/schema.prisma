@@ -1,12 +1,9 @@
-// Local dev uses SQLite (see datasource below). Switch "provider" to
-// "postgresql" and DATABASE_URL to a real Postgres connection string when
-// you deploy to production — the schema itself is Postgres-compatible.
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -34,6 +31,9 @@ enum MovementType {
   PURCHASE_IN
   SALE_OUT
   ADJUSTMENT
+  WASTE_OUT
+  PRODUCTION_IN
+  PRODUCTION_OUT
 }
 
 enum PaymentMethod {
@@ -197,6 +197,7 @@ model Item {
   // other items use this one as a sub-item.
   components ItemComponent[] @relation("ParentItem")
   usedIn     ItemComponent[] @relation("ComponentItem")
+  milkChoices OrderItem[] @relation("OrderItemMilkChoice")
 }
 
 // An item category (e.g. "Pure Coffee", "Bakery"). When a category has
@@ -292,8 +293,10 @@ model OrderItem {
   itemId     String
   quantity   Int
   priceCents Int
+  milkItemId String? // overrides the recipe's default milk ingredient for stock deduction
   order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   item       Item   @relation(fields: [itemId], references: [id])
+  milkItem   Item?  @relation("OrderItemMilkChoice", fields: [milkItemId], references: [id])
 }
 
 // Settles part or all of a customer's receivable balance, or a payment you

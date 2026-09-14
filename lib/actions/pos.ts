@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { calculateTax } from "@/lib/tax";
 import { expandSaleToStockDeductions } from "@/lib/inventory";
+import { MILK_ITEM_NAMES } from "@/lib/milk";
 import type { OrderType, PaymentMethod } from "@prisma/client";
 
 export type ActionState = { error?: string };
@@ -35,6 +36,7 @@ export async function createOrder(
   const quantities = formData
     .getAll("quantity")
     .map((v) => Math.max(0, Math.floor(Number(v) || 0)));
+  const milkItemIds = formData.getAll("milkItemId").map(String);
 
   if (!customerName) return { error: "Customer name is required." };
   if (!ORDER_TYPES.includes(orderType)) {
@@ -45,21 +47,32 @@ export async function createOrder(
   }
 
   const lineInputs = itemIds
-    .map((itemId, i) => ({ itemId, quantity: quantities[i] || 0 }))
+    .map((itemId, i) => ({
+      itemId,
+      quantity: quantities[i] || 0,
+      milkItemId: milkItemIds[i] || null,
+    }))
     .filter((l) => l.itemId && l.quantity > 0);
 
   if (lineInputs.length === 0) {
     return { error: "Add at least one item to the order." };
   }
 
-  const catalogItems = await db.item.findMany({
-    where: {
-      tenantId: tenant.id,
-      id: { in: lineInputs.map((l) => l.itemId) },
-    },
-    include: { category: true },
-  });
+  const [catalogItems, milkItems] = await Promise.all([
+    db.item.findMany({
+      where: {
+        tenantId: tenant.id,
+        id: { in: lineInputs.map((l) => l.itemId) },
+      },
+      include: { category: true },
+    }),
+    db.item.findMany({
+      where: { tenantId: tenant.id, name: { in: MILK_ITEM_NAMES } },
+      select: { id: true },
+    }),
+  ]);
   const itemMap = new Map(catalogItems.map((p) => [p.id, p]));
+  const validMilkIds = new Set(milkItems.map((m) => m.id));
 
   if (itemMap.size !== new Set(lineInputs.map((l) => l.itemId)).size) {
     return { error: "One or more items are invalid." };
@@ -72,6 +85,7 @@ export async function createOrder(
       quantity: l.quantity,
       priceCents: item.priceCents,
       revenueAccountId: item.category?.accountId ?? null,
+      milkItemId: l.milkItemId && validMilkIds.has(l.milkItemId) ? l.milkItemId : null,
     };
   });
 
@@ -191,6 +205,7 @@ export async function createOrder(
               itemId: l.itemId,
               quantity: l.quantity,
               priceCents: l.priceCents,
+              milkItemId: l.milkItemId,
             })),
           },
         },
@@ -202,6 +217,19 @@ export async function createOrder(
       const deductions = new Map<string, number>();
       for (const l of orderLines) {
         const sub = await expandSaleToStockDeductions(tx, l.itemId, l.quantity);
+        // Swap the recipe's default milk ingredient for whatever the
+        // customer chose, keeping the same quantity — same drink, different
+        // milk, no accounting impact (price doesn't change).
+        if (l.milkItemId) {
+          const originalMilkId = Array.from(sub.keys()).find(
+            (id) => validMilkIds.has(id) && id !== l.milkItemId
+          );
+          if (originalMilkId) {
+            const qty = sub.get(originalMilkId)!;
+            sub.delete(originalMilkId);
+            sub.set(l.milkItemId, (sub.get(l.milkItemId) ?? 0) + qty);
+          }
+        }
         for (const [id, qty] of sub) {
           deductions.set(id, (deductions.get(id) ?? 0) + qty);
         }

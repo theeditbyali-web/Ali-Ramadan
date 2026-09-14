@@ -21,6 +21,7 @@ export const DEFAULT_ACCOUNTS: {
   { code: "4000", name: "Sales Revenue", type: "REVENUE" },
   { code: "701", name: "Sales by Category", type: "REVENUE" },
   { code: "5000", name: "Cost of Goods Sold", type: "EXPENSE" },
+  { code: "5100", name: "Waste & Spoilage", type: "EXPENSE" },
   { code: "6000", name: "Payroll Expense", type: "EXPENSE" },
   { code: "6100", name: "Rent Expense", type: "EXPENSE" },
   { code: "6200", name: "Utilities Expense", type: "EXPENSE" },

@@ -11,6 +11,8 @@ import {
   TagIcon,
   UsersIcon,
   BoxIcon,
+  TrashIcon,
+  FactoryIcon,
 } from "@/components/icons";
 
 const NAV = [
@@ -18,6 +20,8 @@ const NAV = [
   { href: "/pos", label: "Point of Sale", icon: ReceiptIcon },
   { href: "/items", label: "Items", icon: TagIcon },
   { href: "/purchases", label: "Purchase Orders", icon: BoxIcon },
+  { href: "/production", label: "Production", icon: FactoryIcon },
+  { href: "/waste", label: "Waste", icon: TrashIcon },
   { href: "/customers", label: "Customers", icon: UsersIcon },
   { href: "/suppliers", label: "Suppliers", icon: UsersIcon },
   { href: "/accounts", label: "Chart of Accounts", icon: BookIcon },
@@ -76,8 +80,8 @@ export default async function AppLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-8 py-10">{children}</div>
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8">{children}</div>
       </main>
     </div>
   );

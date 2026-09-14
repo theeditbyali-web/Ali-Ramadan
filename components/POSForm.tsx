@@ -10,7 +10,15 @@ const initialState: ActionState = {};
 const inputClass =
   "rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft";
 
-type Item = { id: string; name: string; priceCents: number };
+type Item = {
+  id: string;
+  name: string;
+  priceCents: number;
+  category: string;
+  defaultMilkItemId?: string;
+};
+type MilkOption = { id: string; name: string };
+type CartLine = { qty: number; milkItemId?: string };
 
 const ORDER_TYPES: { value: string; label: string }[] = [
   { value: "DINE_IN", label: "Dine-in" },
@@ -31,10 +39,12 @@ function formatCents(cents: number, currency: string): string {
 
 export default function POSForm({
   items: catalogItems,
+  milkOptions,
   customerNames,
   currency,
 }: {
   items: Item[];
+  milkOptions: MilkOption[];
   customerNames: string[];
   currency: string;
 }) {
@@ -42,7 +52,7 @@ export default function POSForm({
     createOrder,
     initialState
   );
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [orderType, setOrderType] = useState("DINE_IN");
   const [paymentMethod, setPaymentMethod] = useState("ON_ACCOUNT");
   const [discountPercent, setDiscountPercent] = useState(0);
@@ -72,7 +82,15 @@ export default function POSForm({
   }
 
   function addItem(id: string) {
-    setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+    setCart((c) => ({
+      ...c,
+      [id]: {
+        qty: (c[id]?.qty || 0) + 1,
+        milkItemId:
+          c[id]?.milkItemId ??
+          catalogItems.find((p) => p.id === id)?.defaultMilkItemId,
+      },
+    }));
   }
 
   function setQty(id: string, qty: number) {
@@ -82,20 +100,42 @@ export default function POSForm({
         delete next[id];
         return next;
       }
-      return { ...c, [id]: qty };
+      return { ...c, [id]: { ...c[id], qty } };
     });
+  }
+
+  function setMilk(id: string, milkItemId: string) {
+    setCart((c) => ({ ...c, [id]: { ...c[id], milkItemId } }));
   }
 
   const lines = useMemo(
     () =>
       Object.entries(cart)
-        .map(([id, qty]) => {
+        .map(([id, line]) => {
           const item = catalogItems.find((p) => p.id === id);
-          return item ? { item, qty } : null;
+          return item ? { item, qty: line.qty, milkItemId: line.milkItemId } : null;
         })
-        .filter((l): l is { item: Item; qty: number } => l !== null),
+        .filter(
+          (l): l is { item: Item; qty: number; milkItemId: string | undefined } =>
+            l !== null
+        ),
     [cart, catalogItems]
   );
+
+  const itemsByCategory = useMemo(() => {
+    const groups = new Map<string, Item[]>();
+    for (const item of catalogItems) {
+      if (!groups.has(item.category)) groups.set(item.category, []);
+      groups.get(item.category)!.push(item);
+    }
+    return Array.from(groups.entries());
+  }, [catalogItems]);
+  const [activeCategory, setActiveCategory] = useState(
+    () => itemsByCategory[0]?.[0] ?? ""
+  );
+  const activeItems =
+    itemsByCategory.find(([category]) => category === activeCategory)?.[1] ??
+    [];
 
   const grossSubtotal = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
   const discount = Math.round((grossSubtotal * discountPercent) / 100);
@@ -108,7 +148,7 @@ export default function POSForm({
       <div className="flex flex-col gap-4">
         <Card className="p-5">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
               Customer name
               <input
                 name="customerName"
@@ -123,13 +163,13 @@ export default function POSForm({
                 ))}
               </datalist>
             </label>
-            <div className="flex flex-col gap-1.5 text-sm font-medium">
+            <div className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
               Order type
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {ORDER_TYPES.map((t) => (
                   <label
                     key={t.value}
-                    className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                    className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
                       orderType === t.value
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-border text-muted hover:bg-slate-50"
@@ -148,13 +188,13 @@ export default function POSForm({
                 ))}
               </div>
             </div>
-            <div className="flex flex-col gap-1.5 text-sm font-medium">
+            <div className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
               Payment method
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {PAYMENT_METHODS.map((m) => (
                   <label
                     key={m.value}
-                    className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
+                    className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors ${
                       paymentMethod === m.value
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-border text-muted hover:bg-slate-50"
@@ -215,21 +255,39 @@ export default function POSForm({
               No items yet — add some on the Items page first.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {catalogItems.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => addItem(p.id)}
-                  className="flex flex-col items-start gap-1 rounded-lg border border-border px-4 py-3 text-left hover:border-accent hover:bg-accent-soft"
-                >
-                  <span className="text-sm font-medium">{p.name}</span>
-                  <span className="text-xs text-muted">
-                    {formatCents(p.priceCents, currency)}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="mb-4 flex flex-wrap gap-2 border-b border-border pb-4">
+                {itemsByCategory.map(([category]) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActiveCategory(category)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      activeCategory === category
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-border text-muted hover:border-accent hover:text-accent"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {activeItems.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => addItem(p.id)}
+                    className="flex flex-col items-start gap-1 rounded-lg border border-border px-4 py-3 text-left hover:border-accent hover:bg-accent-soft"
+                  >
+                    <span className="text-sm font-medium">{p.name}</span>
+                    <span className="text-xs text-muted">
+                      {formatCents(p.priceCents, currency)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </Card>
       </div>
@@ -240,29 +298,49 @@ export default function POSForm({
           <p className="text-sm text-muted">Tap menu items to add them.</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {lines.map(({ item, qty }) => (
-              <div key={item.id} className="flex items-center gap-2 text-sm">
+            {lines.map(({ item, qty, milkItemId }) => (
+              <div key={item.id} className="flex flex-col gap-1.5">
                 <input type="hidden" name="itemId" value={item.id} />
                 <input type="hidden" name="quantity" value={qty} />
-                <span className="flex-1">{item.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setQty(item.id, qty - 1)}
-                  className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
-                >
-                  −
-                </button>
-                <span className="w-5 text-center tabular-nums">{qty}</span>
-                <button
-                  type="button"
-                  onClick={() => setQty(item.id, qty + 1)}
-                  className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
-                >
-                  +
-                </button>
-                <span className="w-16 text-right tabular-nums">
-                  {formatCents(item.priceCents * qty, currency)}
-                </span>
+                <input
+                  type="hidden"
+                  name="milkItemId"
+                  value={milkItemId ?? ""}
+                />
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="flex-1">{item.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQty(item.id, qty - 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
+                  >
+                    −
+                  </button>
+                  <span className="w-5 text-center tabular-nums">{qty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQty(item.id, qty + 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:bg-slate-50"
+                  >
+                    +
+                  </button>
+                  <span className="w-16 text-right tabular-nums">
+                    {formatCents(item.priceCents * qty, currency)}
+                  </span>
+                </div>
+                {item.defaultMilkItemId && (
+                  <select
+                    value={milkItemId ?? item.defaultMilkItemId}
+                    onChange={(e) => setMilk(item.id, e.target.value)}
+                    className="w-fit rounded-md border border-border bg-transparent px-2 py-1 text-xs text-muted outline-none focus:border-accent"
+                  >
+                    {milkOptions.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
           </div>

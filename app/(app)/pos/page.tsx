@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { getMilkOptions, getDefaultMilkByItem } from "@/lib/milk";
 import POSForm from "@/components/POSForm";
 import Card from "@/components/ui/Card";
 
@@ -25,6 +26,7 @@ export default async function POSPage() {
     db.item.findMany({
       where: { tenantId: tenant.id, sellable: true },
       orderBy: { createdAt: "asc" },
+      include: { category: true },
     }),
     db.customer.findMany({
       where: { tenantId: tenant.id },
@@ -39,6 +41,11 @@ export default async function POSPage() {
     }),
   ]);
 
+  const [milkOptions, defaultMilkByItem] = await Promise.all([
+    getMilkOptions(tenant.id),
+    getDefaultMilkByItem(tenant.id, items.map((p) => p.id)),
+  ]);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -51,7 +58,10 @@ export default async function POSPage() {
           id: p.id,
           name: p.name,
           priceCents: p.priceCents,
+          category: p.category?.name ?? "Other",
+          defaultMilkItemId: defaultMilkByItem.get(p.id),
         }))}
+        milkOptions={milkOptions}
         customerNames={customers.map((c) => c.name)}
         currency={tenant.currency}
       />
