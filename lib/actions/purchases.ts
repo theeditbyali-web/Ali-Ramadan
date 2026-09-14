@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 
 export type ActionState = { error?: string };
 
@@ -10,7 +11,8 @@ export async function createPurchaseOrder(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "managePurchases")) return permissionDenied();
 
   const supplierName = String(formData.get("supplierName") || "").trim();
   const itemIds = formData.getAll("itemId").map(String);

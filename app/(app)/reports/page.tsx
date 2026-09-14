@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 
 const REPORTS = [
@@ -44,7 +46,10 @@ const REPORTS = [
   },
 ];
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const { session } = await requireTenant();
+  requirePermission(session.role, "viewReports");
+
   return (
     <div className="flex flex-col gap-8">
       <div>

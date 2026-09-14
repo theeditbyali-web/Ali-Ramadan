@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 
 function formatCents(cents: number, currency: string): string {
@@ -19,7 +20,8 @@ export default async function DailySalesPage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
   const { date: dateParam } = await searchParams;
   const date = dateParam || todayLocalDate();
 

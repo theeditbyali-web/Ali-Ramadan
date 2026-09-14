@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { expandSaleToStockDeductions, getItemCost } from "@/lib/inventory";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 
 export type ActionState = { error?: string };
 
@@ -11,7 +12,8 @@ export async function recordWaste(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "recordWaste")) return permissionDenied();
 
   const itemId = String(formData.get("itemId") || "");
   const quantity = Number(formData.get("quantity") || 0);

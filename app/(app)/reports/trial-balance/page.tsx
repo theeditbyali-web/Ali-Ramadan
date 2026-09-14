@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 
@@ -11,7 +12,8 @@ function formatCents(cents: number): string {
 }
 
 export default async function TrialBalancePage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
 
   const accounts = await db.account.findMany({
     where: { tenantId: tenant.id },

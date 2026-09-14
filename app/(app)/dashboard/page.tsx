@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import BarChart from "@/components/ui/BarChart";
@@ -30,7 +31,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function DashboardPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewDashboard");
 
   const todayStart = startOfDay(new Date());
   const yesterdayStart = new Date(todayStart);

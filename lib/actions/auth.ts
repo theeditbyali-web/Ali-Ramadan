@@ -85,7 +85,7 @@ export async function login(
     tenantId: membership.tenantId,
     role: membership.role,
   });
-  redirect("/dashboard");
+  redirect(membership.role === "STAFF" ? "/pos" : "/dashboard");
 }
 
 export async function logout(): Promise<void> {

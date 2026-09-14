@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 
 function formatCents(cents: number, currency: string): string {
@@ -8,7 +9,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function CustomersPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "manageCustomers");
   const customers = await db.customer.findMany({
     where: { tenantId: tenant.id },
     orderBy: { createdAt: "asc" },

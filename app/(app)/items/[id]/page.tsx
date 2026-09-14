@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission } from "@/lib/permissions";
 import { getItemCost, calculateProfitPercent } from "@/lib/inventory";
 import { removeComponent } from "@/lib/actions/items";
 import ItemEditForm from "@/components/ItemEditForm";
@@ -27,7 +28,8 @@ export default async function ItemCardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  const canManage = hasPermission(session.role, "manageItems");
 
   const item = await db.item.findFirst({
     where: { id, tenantId: tenant.id },
@@ -80,7 +82,27 @@ export default async function ItemCardPage({
         <h1 className="mt-1 text-2xl font-semibold">{item.name}</h1>
       </div>
 
-      <ItemEditForm item={item} categoryNames={categories.map((c) => c.name)} />
+      {canManage ? (
+        <ItemEditForm item={item} categoryNames={categories.map((c) => c.name)} />
+      ) : (
+        <Card className="p-5">
+          <h2 className="mb-4 font-semibold">Details</h2>
+          <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <p className="text-muted">Category</p>
+              <p className="font-medium">{item.category?.name ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted">Unit</p>
+              <p className="font-medium">{item.unit}</p>
+            </div>
+            <div>
+              <p className="text-muted">Sell at POS</p>
+              <p className="font-medium">{item.sellable ? "Yes" : "No"}</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card className="p-5">
@@ -162,6 +184,7 @@ export default async function ItemCardPage({
                     {c.quantity} {c.componentItem.unit}
                   </td>
                   <td className="w-10 py-2 text-right">
+                    {canManage && (
                     <form action={removeComponent}>
                       <input type="hidden" name="componentId" value={c.id} />
                       <input type="hidden" name="parentItemId" value={item.id} />
@@ -172,13 +195,16 @@ export default async function ItemCardPage({
                         Remove
                       </button>
                     </form>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        <ItemComponentForm parentItemId={item.id} options={otherItems} />
+        {canManage && (
+          <ItemComponentForm parentItemId={item.id} options={otherItems} />
+        )}
       </Card>
 
       <Card className="p-5">

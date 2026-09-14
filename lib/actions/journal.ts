@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 
 export type ActionState = { error?: string };
 
@@ -15,7 +16,8 @@ export async function createJournalEntry(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageJournal")) return permissionDenied();
 
   const date = String(formData.get("date") || "");
   const memo = String(formData.get("memo") || "").trim();

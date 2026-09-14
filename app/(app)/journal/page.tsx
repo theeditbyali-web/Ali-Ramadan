@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import JournalEntryForm from "@/components/JournalEntryForm";
 import Card from "@/components/ui/Card";
 
@@ -11,7 +12,8 @@ function formatCents(cents: number): string {
 }
 
 export default async function JournalPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "manageJournal");
 
   const [accounts, entries] = await Promise.all([
     db.account.findMany({

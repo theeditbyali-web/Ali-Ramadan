@@ -6,6 +6,7 @@ import { requireTenant } from "@/lib/current-tenant";
 import { calculateTax } from "@/lib/tax";
 import { expandSaleToStockDeductions } from "@/lib/inventory";
 import { MILK_ITEM_NAMES } from "@/lib/milk";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 import type { OrderType, PaymentMethod } from "@prisma/client";
 
 export type ActionState = { error?: string };
@@ -17,7 +18,8 @@ export async function createOrder(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "useSell")) return permissionDenied();
 
   const customerName = String(formData.get("customerName") || "").trim();
   const orderType = String(formData.get("orderType") || "") as OrderType;

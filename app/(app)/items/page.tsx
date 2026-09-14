@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission } from "@/lib/permissions";
 import { getItemCost, calculateProfitPercent } from "@/lib/inventory";
 import ItemForm from "@/components/ItemForm";
 import Card from "@/components/ui/Card";
@@ -10,7 +11,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function ItemsPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  const canManage = hasPermission(session.role, "manageItems");
   const [items, categories] = await Promise.all([
     db.item.findMany({
       where: { tenantId: tenant.id },
@@ -53,7 +55,9 @@ export default async function ItemsPage() {
         </p>
       </div>
 
-      <ItemForm categoryNames={categories.map((c) => c.name)} />
+      {canManage && (
+        <ItemForm categoryNames={categories.map((c) => c.name)} />
+      )}
 
       <Card className="overflow-hidden">
         <table className="w-full text-sm">

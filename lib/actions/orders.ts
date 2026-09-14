@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { expandSaleToStockDeductions } from "@/lib/inventory";
+import { hasPermission } from "@/lib/permissions";
 
 export async function refundOrder(formData: FormData): Promise<void> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "refundOrders")) return;
   const orderId = String(formData.get("orderId") || "");
 
   const order = await db.order.findFirst({

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 
 export type ActionState = { error?: string };
 
@@ -10,7 +11,8 @@ export async function createSupplier(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageSuppliers")) return permissionDenied();
 
   const name = String(formData.get("name") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
@@ -70,7 +72,8 @@ export async function updateSupplier(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageSuppliers")) return permissionDenied();
 
   const id = String(formData.get("id") || "");
   const phone = String(formData.get("phone") || "").trim();

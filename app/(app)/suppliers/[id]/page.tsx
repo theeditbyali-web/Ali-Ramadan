@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import SupplierEditForm from "@/components/SupplierEditForm";
 import PaymentForm from "@/components/PaymentForm";
 import Card from "@/components/ui/Card";
@@ -22,7 +23,8 @@ export default async function SupplierCardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "manageSuppliers");
 
   const supplier = await db.supplier.findFirst({
     where: { id, tenantId: tenant.id },

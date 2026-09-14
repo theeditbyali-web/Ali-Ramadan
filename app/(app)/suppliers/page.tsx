@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import SupplierCreateForm from "@/components/SupplierCreateForm";
 import Card from "@/components/ui/Card";
 
@@ -9,7 +10,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function SuppliersPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "manageSuppliers");
   const suppliers = await db.supplier.findMany({
     where: { tenantId: tenant.id },
     orderBy: { createdAt: "asc" },

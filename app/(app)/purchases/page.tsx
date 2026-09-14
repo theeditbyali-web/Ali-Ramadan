@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import PurchaseOrderForm from "@/components/PurchaseOrderForm";
 import Card from "@/components/ui/Card";
 
@@ -9,7 +10,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function PurchasesPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "managePurchases");
 
   const [items, suppliers, purchaseOrders] = await Promise.all([
     db.item.findMany({

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import { getItemCost } from "@/lib/inventory";
 import Card from "@/components/ui/Card";
 
@@ -9,7 +10,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function InventoryReportPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
 
   const items = await db.item.findMany({
     where: { tenantId: tenant.id },

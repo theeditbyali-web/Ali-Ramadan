@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 import type { AccountType } from "@prisma/client";
 
 export type ActionState = { error?: string };
@@ -19,7 +20,8 @@ export async function createAccount(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageAccounts")) return permissionDenied();
 
   const code = String(formData.get("code") || "").trim();
   const name = String(formData.get("name") || "").trim();

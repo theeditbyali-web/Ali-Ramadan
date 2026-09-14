@@ -1,11 +1,13 @@
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import AccountForm from "@/components/AccountForm";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 
 export default async function AccountsPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "manageAccounts");
   const accounts = await db.account.findMany({
     where: { tenantId: tenant.id },
     orderBy: { code: "asc" },

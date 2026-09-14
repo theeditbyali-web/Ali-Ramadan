@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { resolveCategory } from "@/lib/categories";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 
 export type ActionState = { error?: string };
 
@@ -11,7 +12,8 @@ export async function createItem(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageItems")) return permissionDenied();
 
   const name = String(formData.get("name") || "").trim();
   const categoryName = String(formData.get("category") || "").trim();
@@ -58,7 +60,8 @@ export async function updateItem(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageItems")) return permissionDenied();
 
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
@@ -113,7 +116,8 @@ export async function addComponent(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageItems")) return permissionDenied();
 
   const parentItemId = String(formData.get("parentItemId") || "");
   const componentItemId = String(formData.get("componentItemId") || "");
@@ -149,7 +153,8 @@ export async function addComponent(
 }
 
 export async function removeComponent(formData: FormData): Promise<void> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "manageItems")) return;
 
   const componentId = String(formData.get("componentId") || "");
   const parentItemId = String(formData.get("parentItemId") || "");

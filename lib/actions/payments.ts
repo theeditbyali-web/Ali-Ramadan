@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { hasPermission, permissionDenied } from "@/lib/permissions";
 import type { SettlementMethod } from "@prisma/client";
 
 export type ActionState = { error?: string };
@@ -18,7 +19,8 @@ export async function recordCustomerPayment(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "managePayments")) return permissionDenied();
 
   const customerId = String(formData.get("customerId") || "");
   const method = String(formData.get("method") || "") as SettlementMethod;
@@ -90,7 +92,8 @@ export async function recordSupplierPayment(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  if (!hasPermission(session.role, "managePayments")) return permissionDenied();
 
   const supplierId = String(formData.get("supplierId") || "");
   const method = String(formData.get("method") || "") as SettlementMethod;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 
 function formatCents(cents: number, currency: string): string {
@@ -8,7 +9,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function BalanceSheetPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
 
   const accounts = await db.account.findMany({
     where: { tenantId: tenant.id },

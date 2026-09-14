@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import Card from "@/components/ui/Card";
 
 const CASH_ACCOUNT_CODES = ["1000", "1010", "531"];
@@ -10,7 +11,8 @@ function formatCents(cents: number, currency: string): string {
 }
 
 export default async function CashFlowPage() {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
 
   const cashAccounts = await db.account.findMany({
     where: { tenantId: tenant.id, code: { in: CASH_ACCOUNT_CODES } },

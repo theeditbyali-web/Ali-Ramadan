@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
+import { requirePermission } from "@/lib/permissions";
 import { refundOrder } from "@/lib/actions/orders";
 import Card from "@/components/ui/Card";
 
@@ -24,7 +25,8 @@ export default async function SalesReportPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const { tenant } = await requireTenant();
+  const { session, tenant } = await requireTenant();
+  requirePermission(session.role, "viewReports");
   const { from, to } = await searchParams;
 
   const createdAt: { gte?: Date; lte?: Date } = {};
