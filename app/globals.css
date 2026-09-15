@@ -40,3 +40,14 @@ body {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+@media print {
+  aside {
+    display: none !important;
+  }
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

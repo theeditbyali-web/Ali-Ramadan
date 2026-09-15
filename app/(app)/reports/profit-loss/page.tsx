@@ -54,14 +54,22 @@ export default async function ProfitLossPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <Link href="/reports" className="text-sm text-muted hover:underline">
-          ← Reports
+      <div className="flex items-start justify-between">
+        <div>
+          <Link href="/reports" className="text-sm text-muted hover:underline">
+            ← Reports
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold">Profit & Loss</h1>
+          <p className="text-muted">
+            Revenue minus expenses{from || to ? "" : ", all-time"}.
+          </p>
+        </div>
+        <Link
+          href={`/reports/profit-loss/csv${from || to ? `?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}` : ""}`}
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+        >
+          Export CSV
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Profit & Loss</h1>
-        <p className="text-muted">
-          Revenue minus expenses{from || to ? "" : ", all-time"}.
-        </p>
       </div>
 
       <form className="flex flex-wrap items-end gap-3">

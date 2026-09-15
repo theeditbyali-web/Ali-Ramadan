@@ -63,15 +63,23 @@ export default async function SalesReportPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <Link href="/reports" className="text-sm text-muted hover:underline">
-          ← Reports
+      <div className="flex items-start justify-between">
+        <div>
+          <Link href="/reports" className="text-sm text-muted hover:underline">
+            ← Reports
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold">Sales Report</h1>
+          <p className="text-muted">
+            Orders, revenue, and totals
+            {from || to ? "" : " — all-time"}.
+          </p>
+        </div>
+        <Link
+          href={`/reports/sales/csv${from || to ? `?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}` : ""}`}
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+        >
+          Export CSV
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Sales Report</h1>
-        <p className="text-muted">
-          Orders, revenue, and totals
-          {from || to ? "" : " — all-time"}.
-        </p>
       </div>
 
       <form className="flex flex-wrap items-end gap-3">
@@ -216,19 +224,27 @@ export default async function SalesReportPage({
                   {formatCents(o.totalCents, tenant.currency)}
                 </td>
                 <td className="px-5 py-3 text-right">
-                  {o.refundedAt ? (
-                    <span className="text-xs text-muted">Refunded</span>
-                  ) : (
-                    <form action={refundOrder}>
-                      <input type="hidden" name="orderId" value={o.id} />
-                      <button
-                        type="submit"
-                        className="text-xs text-muted hover:text-danger hover:underline"
-                      >
-                        Refund
-                      </button>
-                    </form>
-                  )}
+                  <div className="flex items-center justify-end gap-3">
+                    <Link
+                      href={`/receipts/${o.id}`}
+                      className="text-xs text-muted hover:text-accent hover:underline"
+                    >
+                      Receipt
+                    </Link>
+                    {o.refundedAt ? (
+                      <span className="text-xs text-muted">Refunded</span>
+                    ) : (
+                      <form action={refundOrder}>
+                        <input type="hidden" name="orderId" value={o.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-muted hover:text-danger hover:underline"
+                        >
+                          Refund
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

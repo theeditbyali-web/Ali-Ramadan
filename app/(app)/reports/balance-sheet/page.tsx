@@ -62,12 +62,20 @@ export default async function BalanceSheetPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <Link href="/reports" className="text-sm text-muted hover:underline">
-          ← Reports
+      <div className="flex items-start justify-between">
+        <div>
+          <Link href="/reports" className="text-sm text-muted hover:underline">
+            ← Reports
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold">Balance Sheet</h1>
+          <p className="text-muted">What you own, owe, and are worth, right now.</p>
+        </div>
+        <Link
+          href="/reports/balance-sheet/csv"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+        >
+          Export CSV
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Balance Sheet</h1>
-        <p className="text-muted">What you own, owe, and are worth, right now.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

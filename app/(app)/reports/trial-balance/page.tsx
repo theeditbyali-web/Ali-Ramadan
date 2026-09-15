@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { requirePermission } from "@/lib/permissions";
@@ -43,6 +44,13 @@ export default async function TrialBalancePage() {
           <h1 className="text-2xl font-semibold">Trial Balance</h1>
           <p className="text-muted">A snapshot of every account's balance.</p>
         </div>
+        <div className="flex items-center gap-3">
+        <Link
+          href="/reports/trial-balance/csv"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+        >
+          Export CSV
+        </Link>
         <span
           className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${
             balanced
@@ -52,6 +60,7 @@ export default async function TrialBalancePage() {
         >
           {balanced ? "Balanced" : "Out of balance"}
         </span>
+        </div>
       </div>
 
       <Card className="overflow-hidden">

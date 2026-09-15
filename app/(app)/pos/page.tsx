@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireTenant } from "@/lib/current-tenant";
 import { getMilkOptions, getDefaultMilkByItem } from "@/lib/milk";
@@ -84,9 +85,17 @@ export default async function POSPage() {
                 {order.cutlery ? ` · Cutlery: ${order.cutlery.split(",").join(", ")}` : ""}
               </p>
             </div>
-            <p className="font-semibold tabular-nums">
-              {formatCents(order.totalCents, tenant.currency)}
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="font-semibold tabular-nums">
+                {formatCents(order.totalCents, tenant.currency)}
+              </p>
+              <Link
+                href={`/receipts/${order.id}`}
+                className="text-xs text-muted hover:text-accent hover:underline"
+              >
+                Receipt
+              </Link>
+            </div>
           </Card>
         ))}
       </div>
