@@ -69,6 +69,7 @@ model Tenant {
   orders           Order[]
   purchaseOrders   PurchaseOrder[]
   purchaseReceipts PurchaseReceipt[]
+  productionRuns   ProductionRun[]
   itemMovements    ItemMovement[]
   payments         Payment[]
 }
@@ -195,6 +196,8 @@ model Item {
   orderItems           OrderItem[]
   purchaseLines        PurchaseOrderLine[]
   purchaseReceiptLines PurchaseReceiptLine[]
+  productionRuns       ProductionRun[]
+  productionRunLines   ProductionRunLine[]
   movements            ItemMovement[]
 
   // Recipe: what this item is made of (sub-items) and, in reverse, which
@@ -288,6 +291,29 @@ model PurchaseReceiptLine {
   unitCostCents     Int
   purchaseReceipt   PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
   item              Item            @relation(fields: [itemId], references: [id])
+}
+
+// One "make a batch of X from its recipe" event — itemId/quantity is what
+// came out, lines is exactly what ingredients went in (scaled by quantity).
+model ProductionRun {
+  id        String              @id @default(cuid())
+  tenantId  String
+  itemId    String
+  quantity  Float
+  note      String?
+  createdAt DateTime            @default(now())
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  item      Item                @relation(fields: [itemId], references: [id])
+  lines     ProductionRunLine[]
+}
+
+model ProductionRunLine {
+  id              String        @id @default(cuid())
+  productionRunId String
+  itemId          String
+  quantity        Float
+  productionRun   ProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  item            Item          @relation(fields: [itemId], references: [id])
 }
 
 // A stock ledger entry — purchases in, sales out, manual adjustments.

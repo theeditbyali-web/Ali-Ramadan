@@ -34,6 +34,21 @@ export async function recordProduction(
     await db.$transaction(async (tx) => {
       const consumed = await expandSaleToStockDeductions(tx, itemId, quantity);
 
+      await tx.productionRun.create({
+        data: {
+          tenantId: tenant.id,
+          itemId: item.id,
+          quantity,
+          note: note || null,
+          lines: {
+            create: Array.from(consumed.entries()).map(([id, qty]) => ({
+              itemId: id,
+              quantity: qty,
+            })),
+          },
+        },
+      });
+
       await tx.itemMovement.createMany({
         data: Array.from(consumed.entries()).map(([id, qty]) => ({
           tenantId: tenant.id,
