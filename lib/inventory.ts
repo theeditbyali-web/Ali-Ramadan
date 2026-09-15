@@ -24,14 +24,16 @@ export async function getItemCost(
   }
   _visiting.add(itemId);
 
+  // Weighted by what's actually been received, not what was ordered — an
+  // unreceived line hasn't cost anything yet.
   const purchaseLines = await db.purchaseOrderLine.findMany({
-    where: { itemId },
+    where: { itemId, receivedQuantity: { gt: 0 } },
   });
 
   if (purchaseLines.length > 0) {
-    const totalQty = purchaseLines.reduce((s, l) => s + l.quantity, 0);
+    const totalQty = purchaseLines.reduce((s, l) => s + l.receivedQuantity, 0);
     const totalCostCents = purchaseLines.reduce(
-      (s, l) => s + l.unitCostCents * l.quantity,
+      (s, l) => s + l.unitCostCents * l.receivedQuantity,
       0
     );
     if (totalQty > 0) {

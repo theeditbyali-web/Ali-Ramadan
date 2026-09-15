@@ -53,23 +53,24 @@ enum PaymentDirection {
 }
 
 model Tenant {
-  id             String          @id @default(cuid())
-  name           String
-  country        String          @default("LB")
-  currency       String          @default("USD")
-  vatRate        Float           @default(0.11)
-  createdAt      DateTime        @default(now())
-  memberships    Membership[]
-  accounts       Account[]
-  journalEntries JournalEntry[]
-  customers      Customer[]
-  suppliers      Supplier[]
-  categories     Category[]
-  items          Item[]
-  orders         Order[]
-  purchaseOrders PurchaseOrder[]
-  itemMovements  ItemMovement[]
-  payments       Payment[]
+  id               String            @id @default(cuid())
+  name             String
+  country          String            @default("LB")
+  currency         String            @default("USD")
+  vatRate          Float             @default(0.11)
+  createdAt        DateTime          @default(now())
+  memberships      Membership[]
+  accounts         Account[]
+  journalEntries   JournalEntry[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  categories       Category[]
+  items            Item[]
+  orders           Order[]
+  purchaseOrders   PurchaseOrder[]
+  purchaseReceipts PurchaseReceipt[]
+  itemMovements    ItemMovement[]
+  payments         Payment[]
 }
 
 model User {
@@ -112,17 +113,18 @@ model Account {
 }
 
 model JournalEntry {
-  id        String        @id @default(cuid())
-  tenantId  String
-  date      DateTime
-  memo      String?
-  source    String        @default("manual") // "manual" | "pos" | "payroll"
-  createdAt DateTime      @default(now())
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lines     JournalLine[]
-  order     Order?
-  purchaseOrder PurchaseOrder?
-  payment   Payment?
+  id              String           @id @default(cuid())
+  tenantId        String
+  date            DateTime
+  memo            String?
+  source          String           @default("manual") // "manual" | "pos" | "payroll"
+  createdAt       DateTime         @default(now())
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines           JournalLine[]
+  order           Order?
+  purchaseOrder   PurchaseOrder?
+  purchaseReceipt PurchaseReceipt?
+  payment         Payment?
 }
 
 model JournalLine {
@@ -139,17 +141,17 @@ model JournalLine {
 // sub-account under Accounts Receivable in the chart of accounts, so every
 // POS order posts against that specific customer's ledger balance.
 model Customer {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tenantId  String
   code      String // e.g. CUST-0001, this customer's ID card number
   name      String
   phone     String?
   email     String?
   address   String?
-  accountId String   @unique
-  createdAt DateTime @default(now())
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  account   Account  @relation(fields: [accountId], references: [id])
+  accountId String    @unique
+  createdAt DateTime  @default(now())
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account   Account   @relation(fields: [accountId], references: [id])
   orders    Order[]
   payments  Payment[]
 
@@ -179,26 +181,27 @@ model Supplier {
 }
 
 model Item {
-  id         String      @id @default(cuid())
-  tenantId   String
-  name       String
-  categoryId String?
-  unit       String      @default("unit")
-  sellable   Boolean     @default(true) // shown at the POS register when true
-  reorderPoint Float?    // flag as low stock when stock on hand falls to/below this
-  priceCents Int
-  createdAt  DateTime    @default(now())
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category   Category?   @relation(fields: [categoryId], references: [id])
-  orderItems OrderItem[]
-  purchaseLines PurchaseOrderLine[]
-  movements  ItemMovement[]
+  id                   String                @id @default(cuid())
+  tenantId             String
+  name                 String
+  categoryId           String?
+  unit                 String                @default("unit")
+  sellable             Boolean               @default(true) // shown at the POS register when true
+  reorderPoint         Float? // flag as low stock when stock on hand falls to/below this
+  priceCents           Int
+  createdAt            DateTime              @default(now())
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category             Category?             @relation(fields: [categoryId], references: [id])
+  orderItems           OrderItem[]
+  purchaseLines        PurchaseOrderLine[]
+  purchaseReceiptLines PurchaseReceiptLine[]
+  movements            ItemMovement[]
 
   // Recipe: what this item is made of (sub-items) and, in reverse, which
   // other items use this one as a sub-item.
-  components ItemComponent[] @relation("ParentItem")
-  usedIn     ItemComponent[] @relation("ComponentItem")
-  milkChoices OrderItem[] @relation("OrderItemMilkChoice")
+  components  ItemComponent[] @relation("ParentItem")
+  usedIn      ItemComponent[] @relation("ComponentItem")
+  milkChoices OrderItem[]     @relation("OrderItemMilkChoice")
 }
 
 // An item category (e.g. "Pure Coffee", "Bakery"). When a category has
@@ -230,6 +233,11 @@ model ItemComponent {
   @@unique([parentItemId, componentItemId])
 }
 
+// A PurchaseOrder records what was ordered — it has no accounting or stock
+// impact by itself. Each PurchaseReceipt records goods actually received
+// against it (in full or in part) and is what posts to the books and moves
+// stock. journalEntryId is nullable and only ever set on POs created before
+// receiving existed — new POs post nothing until received.
 model PurchaseOrder {
   id             String              @id @default(cuid())
   tenantId       String
@@ -240,18 +248,46 @@ model PurchaseOrder {
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplier       Supplier            @relation(fields: [supplierId], references: [id])
   lines          PurchaseOrderLine[]
-  journalEntryId String              @unique
-  journalEntry   JournalEntry        @relation(fields: [journalEntryId], references: [id])
+  receipts       PurchaseReceipt[]
+  journalEntryId String?             @unique
+  journalEntry   JournalEntry?       @relation(fields: [journalEntryId], references: [id])
 }
 
 model PurchaseOrderLine {
-  id              String        @id @default(cuid())
+  id               String        @id @default(cuid())
+  purchaseOrderId  String
+  itemId           String
+  quantity         Float
+  unitCostCents    Int
+  receivedQuantity Float         @default(0)
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item             Item          @relation(fields: [itemId], references: [id])
+}
+
+// One receiving event against a PurchaseOrder — may cover all of it or just
+// part. This is what actually debits Inventory and moves stock; the order
+// itself does not.
+model PurchaseReceipt {
+  id              String                @id @default(cuid())
+  tenantId        String
   purchaseOrderId String
-  itemId          String
-  quantity        Float
-  unitCostCents   Int
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  item            Item          @relation(fields: [itemId], references: [id])
+  totalCents      Int
+  createdAt       DateTime              @default(now())
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  lines           PurchaseReceiptLine[]
+  journalEntryId  String                @unique
+  journalEntry    JournalEntry          @relation(fields: [journalEntryId], references: [id])
+}
+
+model PurchaseReceiptLine {
+  id                String          @id @default(cuid())
+  purchaseReceiptId String
+  itemId            String
+  quantity          Float
+  unitCostCents     Int
+  purchaseReceipt   PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id], onDelete: Cascade)
+  item              Item            @relation(fields: [itemId], references: [id])
 }
 
 // A stock ledger entry — purchases in, sales out, manual adjustments.
@@ -274,7 +310,7 @@ model Order {
   customerId     String
   type           OrderType
   paymentMethod  PaymentMethod @default(ON_ACCOUNT)
-  cutlery        String?       // comma-separated selections; only set for TAKEAWAY/DELIVERY
+  cutlery        String? // comma-separated selections; only set for TAKEAWAY/DELIVERY
   discountCents  Int           @default(0)
   subtotalCents  Int
   taxCents       Int
@@ -289,15 +325,15 @@ model Order {
 }
 
 model OrderItem {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   orderId    String
   itemId     String
   quantity   Int
   priceCents Int
   milkItemId String? // overrides the recipe's default milk ingredient for stock deduction
-  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  item       Item   @relation(fields: [itemId], references: [id])
-  milkItem   Item?  @relation("OrderItemMilkChoice", fields: [milkItemId], references: [id])
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item       Item    @relation(fields: [itemId], references: [id])
+  milkItem   Item?   @relation("OrderItemMilkChoice", fields: [milkItemId], references: [id])
 }
 
 // Settles part or all of a customer's receivable balance, or a payment you
