@@ -70,6 +70,7 @@ model Tenant {
   purchaseOrders   PurchaseOrder[]
   purchaseReceipts PurchaseReceipt[]
   productionRuns   ProductionRun[]
+  wasteEvents      WasteEvent[]
   itemMovements    ItemMovement[]
   payments         Payment[]
 }
@@ -125,6 +126,7 @@ model JournalEntry {
   order           Order?
   purchaseOrder   PurchaseOrder?
   purchaseReceipt PurchaseReceipt?
+  wasteEvent      WasteEvent?
   payment         Payment?
 }
 
@@ -198,6 +200,8 @@ model Item {
   purchaseReceiptLines PurchaseReceiptLine[]
   productionRuns       ProductionRun[]
   productionRunLines   ProductionRunLine[]
+  wasteEvents          WasteEvent[]
+  wasteEventLines      WasteEventLine[]
   movements            ItemMovement[]
 
   // Recipe: what this item is made of (sub-items) and, in reverse, which
@@ -314,6 +318,33 @@ model ProductionRunLine {
   quantity        Float
   productionRun   ProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
   item            Item          @relation(fields: [itemId], references: [id])
+}
+
+// One "waste" event — itemId/quantity is what was lost, lines is what stock
+// actually got deducted (the item itself if it has no recipe, or its
+// ingredients scaled by quantity if it does). journalEntryId is only set
+// when the loss had a known cost to expense.
+model WasteEvent {
+  id             String           @id @default(cuid())
+  tenantId       String
+  itemId         String
+  quantity       Float
+  reason         String?
+  createdAt      DateTime         @default(now())
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  item           Item             @relation(fields: [itemId], references: [id])
+  lines          WasteEventLine[]
+  journalEntryId String?          @unique
+  journalEntry   JournalEntry?    @relation(fields: [journalEntryId], references: [id])
+}
+
+model WasteEventLine {
+  id           String     @id @default(cuid())
+  wasteEventId String
+  itemId       String
+  quantity     Float
+  wasteEvent   WasteEvent @relation(fields: [wasteEventId], references: [id], onDelete: Cascade)
+  item         Item       @relation(fields: [itemId], references: [id])
 }
 
 // A stock ledger entry — purchases in, sales out, manual adjustments.

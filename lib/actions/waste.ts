@@ -60,8 +60,9 @@ export async function recordWaste(
         })),
       });
 
+      let journalEntryId: string | null = null;
       if (totalCostCents > 0) {
-        await tx.journalEntry.create({
+        const entry = await tx.journalEntry.create({
           data: {
             tenantId: tenant.id,
             date: new Date(),
@@ -75,7 +76,24 @@ export async function recordWaste(
             },
           },
         });
+        journalEntryId = entry.id;
       }
+
+      await tx.wasteEvent.create({
+        data: {
+          tenantId: tenant.id,
+          itemId: item.id,
+          quantity,
+          reason: reason || null,
+          journalEntryId,
+          lines: {
+            create: Array.from(deductions.entries()).map(([id, qty]) => ({
+              itemId: id,
+              quantity: qty,
+            })),
+          },
+        },
+      });
     });
   } catch (err) {
     return {
