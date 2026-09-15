@@ -97,7 +97,7 @@ export async function createOrder(
   );
   const discountCents = Math.round((grossSubtotalCents * discountPercent) / 100);
   const subtotalCents = grossSubtotalCents - discountCents;
-  const taxCents = calculateTax(subtotalCents);
+  const taxCents = calculateTax(subtotalCents, tenant.vatRate);
   const totalCents = subtotalCents + taxCents;
 
   const [fallbackSalesRevenue, vatPayable, whishAccount] = await Promise.all([

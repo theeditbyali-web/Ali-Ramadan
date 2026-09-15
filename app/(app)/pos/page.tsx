@@ -64,6 +64,7 @@ export default async function POSPage() {
         milkOptions={milkOptions}
         customerNames={customers.map((c) => c.name)}
         currency={tenant.currency}
+        vatRate={tenant.vatRate}
       />
 
       <div className="flex flex-col gap-4">

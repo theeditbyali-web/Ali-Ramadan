@@ -57,6 +57,7 @@ model Tenant {
   name           String
   country        String          @default("LB")
   currency       String          @default("USD")
+  vatRate        Float           @default(0.11)
   createdAt      DateTime        @default(now())
   memberships    Membership[]
   accounts       Account[]

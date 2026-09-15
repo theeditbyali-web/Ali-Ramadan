@@ -14,6 +14,7 @@ import {
   BoxIcon,
   TrashIcon,
   FactoryIcon,
+  GearIcon,
 } from "@/components/icons";
 
 const NAV: {
@@ -34,6 +35,7 @@ const NAV: {
   { href: "/journal", label: "Journal", icon: LedgerIcon, permission: "manageJournal" },
   { href: "/reports", label: "Reports", icon: ChartIcon, permission: "viewReports" },
   { href: "/team", label: "Team", icon: UsersIcon, permission: "manageTeam" },
+  { href: "/settings", label: "Settings", icon: GearIcon, permission: "manageSettings" },
 ];
 
 export default async function AppLayout({

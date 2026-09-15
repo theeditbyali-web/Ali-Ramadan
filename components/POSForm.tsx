@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createOrder, type ActionState } from "@/lib/actions/pos";
-import { VAT_RATE } from "@/lib/tax";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
@@ -42,11 +41,13 @@ export default function POSForm({
   milkOptions,
   customerNames,
   currency,
+  vatRate,
 }: {
   items: Item[];
   milkOptions: MilkOption[];
   customerNames: string[];
   currency: string;
+  vatRate: number;
 }) {
   const [state, formAction, pending] = useActionState(
     createOrder,
@@ -140,7 +141,7 @@ export default function POSForm({
   const grossSubtotal = lines.reduce((s, l) => s + l.item.priceCents * l.qty, 0);
   const discount = Math.round((grossSubtotal * discountPercent) / 100);
   const subtotal = grossSubtotal - discount;
-  const tax = Math.round(subtotal * VAT_RATE);
+  const tax = Math.round(subtotal * vatRate);
   const total = subtotal + tax;
 
   return (
@@ -373,7 +374,7 @@ export default function POSForm({
             </div>
           )}
           <div className="flex justify-between text-muted">
-            <span>VAT ({Math.round(VAT_RATE * 100)}%)</span>
+            <span>VAT ({Math.round(vatRate * 100)}%)</span>
             <span className="tabular-nums">{formatCents(tax, currency)}</span>
           </div>
           <div className="flex justify-between text-base font-semibold">

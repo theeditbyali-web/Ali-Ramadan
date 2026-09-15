@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   viewReports: ["OWNER", "ADMIN"],
   viewDashboard: ["OWNER", "ADMIN"],
   manageTeam: ["OWNER"],
+  manageSettings: ["OWNER"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
