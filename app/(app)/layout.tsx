@@ -51,9 +51,9 @@ export default async function AppLayout({
       <aside className="flex w-64 shrink-0 flex-col bg-[var(--sidebar-bg)] text-[var(--sidebar-fg)]">
         <div className="flex items-center gap-2 px-6 py-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
-            L
+            T
           </div>
-          <span className="text-base font-semibold text-white">Ledger</span>
+          <span className="text-base font-semibold text-white">Tallyo</span>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 px-3">

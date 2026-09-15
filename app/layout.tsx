@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ledger",
+  title: "Tallyo",
   description: "Accounting, payroll, and POS for small businesses.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Ledger",
+    title: "Tallyo",
   },
 };
 

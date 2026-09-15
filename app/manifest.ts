@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Ledger",
-    short_name: "Ledger",
+    name: "Tallyo",
+    short_name: "Tallyo",
     description: "Accounting, inventory, and POS for small businesses.",
     start_url: "/dashboard",
     display: "standalone",

@@ -16,7 +16,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-base font-bold text-white">
-            L
+            T
           </div>
         </div>
         <Card className="p-8">

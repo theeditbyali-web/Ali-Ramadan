@@ -35,9 +35,9 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">
-              L
+              T
             </div>
-            <span className="text-base font-semibold">Ledger</span>
+            <span className="text-base font-semibold">Tallyo</span>
           </div>
           <nav className="flex items-center gap-3">
             <Link
@@ -64,7 +64,7 @@ export default function Home() {
           Books, sales, and payroll — in one place
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted">
-          Ledger is a straightforward accounting platform: a proper
+          Tallyo is a straightforward accounting platform: a proper
           double-entry general ledger today, with point of sale and payroll
           on the way.
         </p>
@@ -117,7 +117,7 @@ export default function Home() {
 
       <footer className="border-t border-border">
         <div className="mx-auto max-w-6xl px-6 py-6 text-sm text-muted">
-          © {new Date().getFullYear()} Ledger.
+          © {new Date().getFullYear()} Tallyo.
         </div>
       </footer>
     </div>
